@@ -1731,4 +1731,8 @@ function formatDate(s) { if (!s) return '—'; const d = new Date(s); return d.t
       } catch (e) {}
     }
   }
-  document.getElementById('loginPwd').addEventListener('keydown', e => { if (e.key === 'Enter') 
+  document.getElementById('loginPwd').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+})();
+</script>
+</body>
+</html>
