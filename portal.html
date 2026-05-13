@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Arena Roma — Portal do Vendedor</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 @font-face {
   font-family: 'Anton';
@@ -49,121 +50,119 @@
 }
 
   :root {
-    --black: #000000;
-    --black-1: #050507;
-    --black-2: #0c0c0f;
-    --gray-1: #161618;
-    --gray-2: #1e1e22;
-    --gray-3: #2a2a30;
-    --gray-4: #4a4a52;
-    --gray-5: #8a8a92;
-    --gray-6: #b8b8c0;
-    --gray-7: #dcdce0;
-    --white: #ffffff;
-    --border: #232328;
-    --border-light: rgba(255,255,255,0.22);
-    --border-soft: rgba(255,255,255,0.06);
+    --black: #000; --black-1: #050507; --black-2: #0c0c0f;
+    --gray-1: #161618; --gray-2: #1e1e22; --gray-3: #2a2a30;
+    --gray-4: #4a4a52; --gray-5: #8a8a92; --gray-6: #b8b8c0; --gray-7: #dcdce0;
+    --white: #fff; --border: #232328; --border-light: rgba(255,255,255,0.22);
     --shadow-lg: 0 24px 50px -16px rgba(0,0,0,0.9);
-    --shadow-card: 0 8px 24px -10px rgba(0,0,0,0.8);
+    --shadow-card: 0 6px 18px -8px rgba(0,0,0,0.7);
     --shadow-inset-top: inset 0 1px 0 rgba(255,255,255,0.06);
-
-    --fla-red: #DC143C;
-    --flu-grena: #6b1530;
-    --flu-grena-2: #3a0a18;
-    --flu-verde: #006633;
-    --flu-verde-2: #003319;
-    --r55-blue: #1e3a8a;
-    --r55-blue-2: #0a1a4a;
-
-    --blue: #2563eb;
-    --blue-light: #3b82f6;
-    --blue-deep: #1e40af;
+    --fla-red: #DC143C; --flu-grena: #6b1530; --flu-grena-2: #3a0a18;
+    --flu-verde: #006633; --flu-verde-2: #003319;
+    --r55-blue: #1e3a8a; --r55-blue-2: #0a1a4a;
+    --blue: #2563eb; --blue-light: #3b82f6; --blue-deep: #1e40af;
     --blue-glow: rgba(37,99,235,0.45);
   }
-
   * { box-sizing: border-box; margin: 0; padding: 0; }
-
   html, body {
-    color: var(--white);
-    font-family: 'Inter', system-ui, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
+    color: var(--white); font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased; overflow-x: hidden;
   }
-  /* Fundo gradient — escuro em cima, mais claro embaixo */
   body {
     min-height: 100vh;
     background:
       radial-gradient(ellipse at 0% 0%, rgba(37,99,235,0.08) 0%, transparent 35%),
       radial-gradient(ellipse at 100% 5%, rgba(255,255,255,0.025) 0%, transparent 40%),
-      linear-gradient(180deg,
-        #000 0%,
-        #000 30%,
-        #0a0a0e 55%,
-        #1c1c22 75%,
-        #2e2e36 88%,
-        #3e3e48 100%
-      );
+      linear-gradient(180deg, #000 0%, #000 30%, #0a0a0e 55%, #1c1c22 75%, #2e2e36 88%, #3e3e48 100%);
     background-attachment: fixed;
   }
 
-  /* DEV BAR */
-  .dev-bar {
-    position: sticky; top: 0; z-index: 100;
-    background: rgba(0,0,0,0.85);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--border-soft);
-    padding: 7px 24px;
-    display: flex; align-items: center; gap: 14px;
-    font-size: 11px; color: var(--gray-5);
+  /* LOGIN */
+  .login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .login-card {
+    background: linear-gradient(180deg, var(--gray-1), var(--black-2));
+    border: 1px solid var(--border); border-radius: 18px;
+    padding: 36px 32px; max-width: 380px; width: 100%;
+    box-shadow: var(--shadow-lg); position: relative; overflow: hidden;
   }
-  .dev-bar strong { color: var(--white); text-transform: uppercase; letter-spacing: 1px; }
-  .dev-bar select {
-    background: var(--gray-1); color: var(--white);
-    border: 1px solid var(--border); border-radius: 6px;
-    padding: 5px 8px; font-family: inherit; cursor: pointer;
-    font-size: 11px;
+  .login-card::before {
+    content: ''; position: absolute; top: -50%; left: -20%;
+    width: 60%; height: 200%;
+    background: radial-gradient(ellipse, rgba(37,99,235,0.12), transparent 60%);
+    pointer-events: none;
+  }
+  .login-logo { width: 64px; margin: 0 auto 14px; display: block; position: relative; }
+  .login-brand { text-align: center; margin-bottom: 30px; position: relative; }
+  .login-brand .word1 {
+    font-family: 'Anton', sans-serif; font-size: 32px; letter-spacing: 6px; display: block;
+    background: linear-gradient(180deg, #fff, #c0c0c4);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .login-brand .word2 {
+    font-family: 'Anton', sans-serif; font-size: 12px; letter-spacing: 4px;
+    color: var(--blue-light); margin-top: 2px; display: block; text-transform: uppercase;
+  }
+  .login-field { margin-bottom: 14px; position: relative; }
+  .login-field label {
+    display: block; font-size: 10px; color: var(--gray-5);
+    text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; margin-bottom: 6px;
+  }
+  .login-field input {
+    width: 100%; background: var(--gray-2); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--white); font-family: inherit;
+    font-size: 14px; padding: 12px 14px; outline: none; transition: border-color .15s;
+  }
+  .login-field input:focus { border-color: var(--blue); }
+  .login-btn {
+    width: 100%; background: linear-gradient(180deg, var(--blue-light), var(--blue-deep));
+    color: var(--white); border: none; padding: 14px; border-radius: 10px;
+    font-weight: 800; font-size: 13px; letter-spacing: 1.5px;
+    text-transform: uppercase; cursor: pointer; margin-top: 8px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 4px 14px -4px var(--blue-glow);
+  }
+  .login-btn:hover { transform: translateY(-1px); }
+  .login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .login-error {
+    background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.4);
+    color: #fca5a5; padding: 10px 12px; border-radius: 8px; font-size: 12px;
+    margin-bottom: 12px; display: none;
+  }
+  .login-error.show { display: block; }
+  .login-hint {
+    margin-top: 18px; padding-top: 18px;
+    border-top: 1px dashed var(--gray-3);
+    font-size: 11px; color: var(--gray-5); line-height: 1.5; text-align: center;
   }
 
-  /* HEADER */
+  /* APP */
+  .app { display: none; }
+  .app.shown { display: block; }
+
   header.brand {
     padding: 22px 40px 16px;
     display: flex; align-items: center; justify-content: space-between;
     flex-wrap: wrap; gap: 14px;
-    border-bottom: 1px solid var(--border-soft);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
     position: relative;
   }
   header.brand::after {
-    content: '';
-    position: absolute; left: 0; right: 0; bottom: -1px; height: 1px;
-    background: linear-gradient(90deg, transparent 0%, rgba(37,99,235,0.5) 50%, transparent 100%);
+    content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(37,99,235,0.5) 50%, transparent);
   }
   .brand-left { display: flex; align-items: center; gap: 18px; }
-  .rmnl-logo { width: 76px; height: auto; }
-  .brand-title {
-    display: flex; flex-direction: column;
-    line-height: 1;
-    border-left: 2px solid var(--blue);
-    padding-left: 18px;
-  }
+  .rmnl-logo { width: 60px; height: auto; }
+  .brand-title { display: flex; flex-direction: column; line-height: 1; border-left: 2px solid var(--blue); padding-left: 16px; }
   .brand-title .word1 {
-    font-family: 'Anton', 'Bebas Neue', sans-serif;
-    font-size: 34px; letter-spacing: 6px;
-    background: linear-gradient(180deg, #ffffff 0%, #c8c8cc 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
+    font-family: 'Anton', sans-serif; font-size: 28px; letter-spacing: 5px;
+    background: linear-gradient(180deg, #fff, #c8c8cc);
+    -webkit-background-clip: text; background-clip: text;
     -webkit-text-fill-color: transparent;
   }
-  .brand-title .word2 {
-    font-family: 'Anton', 'Bebas Neue', sans-serif;
-    font-size: 34px; letter-spacing: 6px;
-    color: var(--gray-4);
-    margin-top: -6px;
-  }
-
+  .brand-title .word2 { font-family: 'Anton', sans-serif; font-size: 28px; letter-spacing: 5px; color: var(--gray-4); margin-top: -5px; }
   .user-chip {
     display: flex; align-items: center; gap: 12px;
-    background: linear-gradient(180deg, var(--gray-2) 0%, var(--gray-1) 100%);
+    background: linear-gradient(180deg, var(--gray-2), var(--gray-1));
     border: 1px solid var(--border);
     box-shadow: var(--shadow-inset-top), 0 4px 12px -6px rgba(0,0,0,0.6);
     padding: 7px 12px 7px 7px; border-radius: 12px;
@@ -172,128 +171,80 @@
     width: 34px; height: 34px; border-radius: 10px;
     display: grid; place-items: center;
     font-weight: 800; color: var(--white); font-size: 12px;
-    background: linear-gradient(135deg, var(--blue) 0%, var(--blue-deep) 100%);
+    background: linear-gradient(135deg, var(--blue), var(--blue-deep));
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 2px 6px -2px rgba(37,99,235,0.4);
   }
   .user-info { display: flex; flex-direction: column; line-height: 1.2; }
-  .user-name { font-weight: 700; font-size: 13px; color: var(--white); }
+  .user-name { font-weight: 700; font-size: 13px; }
   .user-meta { font-size: 10px; color: var(--gray-5); margin-top: 2px; }
   .user-points {
     margin-left: 4px;
-    background: linear-gradient(180deg, var(--blue-light) 0%, var(--blue-deep) 100%);
+    background: linear-gradient(180deg, var(--blue-light), var(--blue-deep));
     color: var(--white); font-weight: 800;
     padding: 5px 10px; border-radius: 8px;
-    font-size: 12px;
-    display: flex; align-items: center; gap: 5px;
+    font-size: 12px; display: flex; align-items: center; gap: 5px;
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 8px -2px var(--blue-glow);
   }
+  .logout-link {
+    background: transparent; border: 1px solid var(--border); color: var(--gray-6);
+    width: 32px; height: 32px; border-radius: 8px; cursor: pointer;
+    display: grid; place-items: center;
+  }
+  .logout-link:hover { border-color: var(--blue); color: var(--white); }
 
-  /* HERO + KPIs */
   .top-row {
     padding: 18px 40px 0;
-    display: grid;
-    grid-template-columns: 1.4fr 3fr;
-    gap: 14px;
-    align-items: stretch;
+    display: grid; grid-template-columns: 1.4fr 3fr; gap: 14px; align-items: stretch;
   }
   .hero-block {
-    background: linear-gradient(180deg, var(--gray-1) 0%, var(--black-2) 100%);
-    border: 1px solid var(--border);
-    border-radius: 16px;
+    background: linear-gradient(180deg, var(--gray-1), var(--black-2));
+    border: 1px solid var(--border); border-radius: 16px;
     padding: 22px 24px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+    display: flex; flex-direction: column; justify-content: center;
     box-shadow: var(--shadow-inset-top), var(--shadow-card);
-    position: relative;
-    overflow: hidden;
+    position: relative; overflow: hidden;
   }
   .hero-block::before {
-    content: '';
-    position: absolute;
-    top: -50%; left: -20%;
+    content: ''; position: absolute; top: -50%; left: -20%;
     width: 60%; height: 200%;
-    background: radial-gradient(ellipse, rgba(37,99,235,0.10) 0%, transparent 60%);
+    background: radial-gradient(ellipse, rgba(37,99,235,0.10), transparent 60%);
     pointer-events: none;
   }
   .hero-block h1 {
-    font-family: 'Anton', 'Bebas Neue', sans-serif;
-    font-size: 38px; letter-spacing: 2px; line-height: 1;
-    margin-bottom: 12px;
-    text-transform: uppercase;
-    color: var(--white);
-    position: relative;
+    font-family: 'Anton', sans-serif; font-size: 38px; letter-spacing: 2px;
+    line-height: 1; margin-bottom: 12px; text-transform: uppercase;
+    color: var(--white); position: relative;
   }
-  .activity-strip {
-    display: flex; gap: 14px;
-    margin-top: 4px;
-    padding-top: 10px;
-    border-top: 1px dashed var(--gray-3);
-  }
-  .activity-strip .pill {
-    font-size: 11px;
-    color: var(--gray-6);
-    display: flex; align-items: center; gap: 6px;
-  }
-  .activity-strip .pill strong { color: var(--white); font-weight: 700; }
-  .live-dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: var(--blue-light);
-    box-shadow: 0 0 0 0 var(--blue-glow);
-    animation: pulse 1.6s ease-out infinite;
-  }
-  @keyframes pulse {
-    0%   { box-shadow: 0 0 0 0 var(--blue-glow); }
-    70%  { box-shadow: 0 0 0 8px rgba(37,99,235,0); }
-    100% { box-shadow: 0 0 0 0 rgba(37,99,235,0); }
-  }
-
-  .kpis {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
-  }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
   .kpi {
-    background: linear-gradient(180deg, var(--gray-2) 0%, var(--gray-1) 50%, var(--black-2) 100%);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 14px 16px;
-    position: relative; overflow: hidden;
+    background: linear-gradient(180deg, var(--gray-2), var(--gray-1) 50%, var(--black-2));
+    border: 1px solid var(--border); border-radius: 14px;
+    padding: 14px 16px; position: relative; overflow: hidden;
     box-shadow: var(--shadow-inset-top), 0 6px 18px -8px rgba(0,0,0,0.7);
-    transition: transform .2s, border-color .2s;
   }
-  .kpi:hover { transform: translateY(-2px); border-color: var(--blue-deep); }
   .kpi::before {
-    content: '';
-    position: absolute;
-    top: 0; right: 0;
-    width: 80px; height: 80px;
-    background: radial-gradient(circle at top right, rgba(37,99,235,0.08) 0%, transparent 60%);
+    content: ''; position: absolute; top: 0; right: 0; width: 80px; height: 80px;
+    background: radial-gradient(circle at top right, rgba(37,99,235,0.08), transparent 60%);
     pointer-events: none;
   }
-  .kpi-label {
-    font-size: 10px; color: var(--gray-5);
-    text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700;
-  }
+  .kpi-label { font-size: 10px; color: var(--gray-5); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; }
   .kpi-value {
-    font-family: 'Anton', 'Bebas Neue', sans-serif;
-    font-size: 34px; line-height: 1; margin-top: 4px;
-    background: linear-gradient(180deg, #ffffff 0%, #b8b8c0 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
+    font-family: 'Anton', sans-serif; font-size: 34px; line-height: 1; margin-top: 4px;
+    background: linear-gradient(180deg, #fff, #b8b8c0);
+    -webkit-background-clip: text; background-clip: text;
     -webkit-text-fill-color: transparent;
   }
   .kpi-sub { font-size: 11px; color: var(--gray-5); margin-top: 4px; }
 
-  /* FEATURED — Arena Mensal */
+  /* FEATURED */
   .featured {
     margin: 18px 40px 0;
-    border-radius: 18px;
-    padding: 28px 34px;
-    position: relative; overflow: hidden;
-    min-height: 160px;
+    border-radius: 18px; padding: 28px 34px;
+    position: relative; overflow: hidden; min-height: 160px;
     background:
-      radial-gradient(ellipse at 15% 25%, rgba(220,20,60,0.45) 0%, transparent 40%),
-      radial-gradient(ellipse at 85% 25%, rgba(37,99,235,0.45) 0%, transparent 40%),
-      radial-gradient(ellipse at 50% 95%, rgba(0,102,51,0.45) 0%, transparent 50%),
+      radial-gradient(ellipse at 15% 25%, rgba(220,20,60,0.45), transparent 40%),
+      radial-gradient(ellipse at 85% 25%, rgba(37,99,235,0.45), transparent 40%),
+      radial-gradient(ellipse at 50% 95%, rgba(0,102,51,0.45), transparent 50%),
       linear-gradient(180deg, #0a0a0e 0%, #050507 50%, #000 100%);
     color: var(--white);
     box-shadow: var(--shadow-lg);
@@ -303,44 +254,24 @@
     cursor: pointer;
   }
   .featured::before {
-    content: '';
-    position: absolute;
-    inset: 0;
+    content: ''; position: absolute; inset: 0;
     background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.5) 100%);
     pointer-events: none;
   }
-  .featured::after {
-    content: 'DESTAQUE · ABERTA A TODOS';
-    position: absolute; top: 16px; right: 22px;
-    font-size: 10px; letter-spacing: 2px;
-    background: linear-gradient(180deg, var(--blue-light) 0%, var(--blue-deep) 100%);
-    color: var(--white);
-    font-weight: 800; padding: 5px 11px; border-radius: 5px;
-    box-shadow: 0 2px 10px var(--blue-glow);
-    z-index: 3;
-  }
   .featured-trophy {
-    position: absolute;
-    top: 50%; left: 50%;
+    position: absolute; top: 50%; left: 50%;
     transform: translate(-50%, -50%);
     width: 280px; height: 280px;
-    opacity: 0.16;
-    filter: blur(3.5px) drop-shadow(0 0 20px rgba(255,255,255,0.3));
-    color: var(--white);
-    pointer-events: none;
-    z-index: 1;
+    opacity: 0.16; filter: blur(3.5px) drop-shadow(0 0 20px rgba(255,255,255,0.3));
+    color: var(--white); pointer-events: none; z-index: 1;
   }
   .featured-trophy svg { width: 100%; height: 100%; }
-
   .featured-content { flex: 1; min-width: 280px; position: relative; z-index: 2; }
   .featured h2 {
-    font-family: 'Anton', 'Bebas Neue', sans-serif;
-    font-size: 46px; letter-spacing: 2.5px; line-height: 1;
-    margin-bottom: 10px;
-    text-transform: uppercase;
-    background: linear-gradient(180deg, #ffffff 0%, #c8c8cc 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
+    font-family: 'Anton', sans-serif; font-size: 46px; letter-spacing: 2.5px;
+    line-height: 1; margin-bottom: 10px; text-transform: uppercase;
+    background: linear-gradient(180deg, #fff, #c8c8cc);
+    -webkit-background-clip: text; background-clip: text;
     -webkit-text-fill-color: transparent;
     text-shadow: 0 2px 16px rgba(0,0,0,0.4);
   }
@@ -349,294 +280,163 @@
   .featured-meta div { color: rgba(255,255,255,0.55); font-size: 11px; }
   .featured-meta strong { color: var(--white); font-size: 12px; display: block; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
   .featured-cta {
-    background: linear-gradient(180deg, var(--blue-light) 0%, var(--blue-deep) 100%);
-    color: var(--white);
-    border: none; padding: 14px 28px; border-radius: 10px;
+    background: linear-gradient(180deg, var(--blue-light), var(--blue-deep));
+    color: var(--white); border: none; padding: 14px 28px; border-radius: 10px;
     font-weight: 800; font-size: 13px; letter-spacing: 1.5px;
     text-transform: uppercase; cursor: pointer;
-    transition: transform .2s, box-shadow .2s;
-    white-space: nowrap;
-    position: relative; z-index: 2;
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,0.25),
-      0 6px 20px -4px var(--blue-glow);
+    white-space: nowrap; position: relative; z-index: 2;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 6px 20px -4px var(--blue-glow);
   }
-  .featured-cta:hover {
-    transform: translateY(-2px);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.25), 0 10px 26px -6px var(--blue-glow);
-  }
+  .featured-cta:hover { transform: translateY(-2px); }
 
-  /* SECTION TITLE */
-  .section-title {
-    padding: 28px 40px 14px;
-    display: flex; align-items: center; justify-content: space-between;
-    flex-wrap: wrap; gap: 10px;
-  }
-  .section-title h3 {
-    font-family: 'Anton', 'Bebas Neue', sans-serif;
-    font-size: 26px; letter-spacing: 3px;
-    text-transform: uppercase;
-  }
+  /* SECTION */
+  .section-title { padding: 28px 40px 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  .section-title h3 { font-family: 'Anton', sans-serif; font-size: 26px; letter-spacing: 3px; text-transform: uppercase; }
   .section-title .info { font-size: 11px; color: var(--gray-5); }
   .section-title .info strong { color: var(--white); }
 
-  /* BANNERS GRID — agora com contorno cinza pra dar destaque */
+  /* BANNERS */
   .banners {
     padding: 0 40px;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
   }
   .banner {
-    border-radius: 16px; overflow: hidden;
-    position: relative; min-height: 240px;
-    cursor: pointer;
-    transition: transform .3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow .3s, border-color .3s;
+    border-radius: 16px; overflow: hidden; position: relative; min-height: 240px;
+    cursor: pointer; transition: transform .3s, box-shadow .3s, border-color .3s;
     display: flex; flex-direction: column; justify-content: flex-end;
     background: var(--gray-1);
-    /* Contorno cinza claro pra destaque */
     border: 1.5px solid var(--border-light);
     box-shadow: var(--shadow-card), inset 0 1px 0 rgba(255,255,255,0.08);
   }
-  .banner:hover {
-    transform: translateY(-6px) scale(1.012);
-    box-shadow: 0 24px 40px -16px rgba(0,0,0,0.9);
-    border-color: rgba(255,255,255,0.45);
-  }
-
+  .banner:hover { transform: translateY(-6px) scale(1.012); border-color: rgba(255,255,255,0.45); }
   .banner-watermark {
-    position: absolute;
-    top: -16px; left: -8px;
-    font-family: 'Anton', 'Bebas Neue', sans-serif;
-    font-size: 220px; font-weight: 900;
-    line-height: 0.82;
-    color: rgba(255,255,255,0.08);
-    letter-spacing: -10px;
-    pointer-events: none;
-    overflow: hidden;
-    white-space: nowrap;
-    text-transform: uppercase;
-    mix-blend-mode: overlay;
+    position: absolute; top: -16px; left: -8px;
+    font-family: 'Anton', sans-serif; font-size: 220px; font-weight: 900;
+    line-height: 0.82; color: rgba(255,255,255,0.08); letter-spacing: -10px;
+    pointer-events: none; overflow: hidden; white-space: nowrap;
+    text-transform: uppercase; mix-blend-mode: overlay;
   }
   .banner-sheen {
     position: absolute; inset: 0;
     background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 35%, transparent 65%, rgba(0,0,0,0.35) 100%);
     pointer-events: none;
   }
-  .banner-grain {
-    position: absolute; inset: 0;
-    background: repeating-linear-gradient(45deg, transparent 0 8px, rgba(255,255,255,0.012) 8px 9px);
-    pointer-events: none;
-  }
-
   .banner-content { position: relative; padding: 18px 20px; z-index: 2; }
   .banner-tag {
-    display: inline-block;
-    font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase;
-    font-weight: 800; padding: 5px 9px; border-radius: 4px;
-    margin-bottom: 12px;
+    display: inline-block; font-size: 9px; letter-spacing: 1.5px;
+    text-transform: uppercase; font-weight: 800; padding: 5px 9px;
+    border-radius: 4px; margin-bottom: 12px;
     background: rgba(0,0,0,0.4);
-    border: 1px solid rgba(255,255,255,0.22);
-    color: var(--white);
+    border: 1px solid rgba(255,255,255,0.22); color: var(--white);
     backdrop-filter: blur(8px);
   }
-  .banner-tag.elite {
-    background: linear-gradient(180deg, #ffffff 0%, #d8d8dc 100%);
-    color: var(--black);
-    border-color: rgba(255,255,255,0.5);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
-  }
-  .banner-tag.blue {
-    background: linear-gradient(180deg, var(--blue-light) 0%, var(--blue-deep) 100%);
-    color: var(--white);
-    border-color: rgba(255,255,255,0.25);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.22);
-  }
+  .banner-tag.elite { background: linear-gradient(180deg, #fff, #d8d8dc); color: var(--black); border-color: rgba(255,255,255,0.5); }
+  .banner-tag.blue { background: linear-gradient(180deg, var(--blue-light), var(--blue-deep)); color: var(--white); }
   .banner-title {
-    font-family: 'Anton', 'Bebas Neue', sans-serif;
-    font-size: 26px; letter-spacing: 1.5px; line-height: 1;
-    margin-bottom: 8px;
-    text-transform: uppercase;
+    font-family: 'Anton', sans-serif; font-size: 26px; letter-spacing: 1.5px;
+    line-height: 1; margin-bottom: 8px; text-transform: uppercase;
     text-shadow: 0 2px 12px rgba(0,0,0,0.5);
   }
   .banner-desc {
     font-size: 12px; color: rgba(255,255,255,0.78); line-height: 1.45;
     margin-bottom: 12px;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
   }
-  .banner-meta {
-    display: flex; justify-content: space-between; align-items: center;
-    gap: 10px; padding-top: 12px;
-    border-top: 1px solid rgba(255,255,255,0.15);
-  }
+  .banner-meta { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.15); }
   .banner-prize { font-size: 11px; color: rgba(255,255,255,0.62); line-height: 1.35; }
-  .banner-prize strong { color: var(--white); font-weight: 700; font-size: 11px; }
+  .banner-prize strong { color: var(--white); font-weight: 700; }
   .banner-btn {
-    background: linear-gradient(180deg, #ffffff 0%, #d8d8dc 100%);
-    color: var(--black);
-    border: none;
-    padding: 8px 14px; border-radius: 8px;
-    font-weight: 800; font-size: 10px;
-    letter-spacing: 1.2px; text-transform: uppercase;
-    cursor: pointer; transition: transform .15s, box-shadow .15s;
+    background: linear-gradient(180deg, #fff, #d8d8dc); color: var(--black); border: none;
+    padding: 8px 14px; border-radius: 8px; font-weight: 800; font-size: 10px;
+    letter-spacing: 1.2px; text-transform: uppercase; cursor: pointer;
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 2px 6px rgba(0,0,0,0.25);
   }
-  .banner-btn:hover { transform: scale(1.05); box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 4px 10px rgba(0,0,0,0.35); }
-  .banner.bg-premium .banner-btn {
-    background: linear-gradient(180deg, var(--blue-light) 0%, var(--blue-deep) 100%);
-    color: var(--white);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 2px 8px var(--blue-glow);
-  }
-  .banner.bg-premium .banner-btn:hover {
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 4px 12px var(--blue-glow);
-  }
+  .banner-btn:hover { transform: scale(1.05); }
 
-  /* Variantes de fundo */
-  .bg-premium {
-    background:
-      radial-gradient(ellipse at 75% 30%, rgba(37,99,235,0.32) 0%, transparent 55%),
-      radial-gradient(ellipse at 25% 25%, rgba(255,255,255,0.14) 0%, transparent 50%),
-      linear-gradient(160deg, #3a3a44 0%, #16161a 50%, #050507 100%);
-  }
-  .bg-fla {
-    background:
-      radial-gradient(ellipse at 75% 75%, rgba(220,20,60,0.58) 0%, transparent 50%),
-      radial-gradient(ellipse at 30% 25%, rgba(220,20,60,0.18) 0%, transparent 45%),
-      linear-gradient(165deg, #0c0c0e 0%, #1a0408 60%, #000 100%);
-  }
-  .bg-flu {
-    background:
-      radial-gradient(ellipse at 80% 75%, rgba(0,102,51,0.72) 0%, transparent 50%),
-      radial-gradient(ellipse at 20% 25%, rgba(107,21,48,0.78) 0%, transparent 50%),
-      radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.06) 0%, transparent 40%),
-      linear-gradient(170deg, var(--flu-grena) 0%, var(--flu-grena-2) 50%, var(--flu-verde-2) 100%);
-  }
-  .bg-55rj {
-    background:
-      radial-gradient(ellipse at 75% 70%, rgba(30,58,138,0.78) 0%, transparent 55%),
-      radial-gradient(ellipse at 25% 25%, rgba(30,58,138,0.22) 0%, transparent 50%),
-      linear-gradient(165deg, #0a0a0e 0%, #050b1d 60%, #000 100%);
-  }
+  /* Variantes */
+  .bg-premium { background: radial-gradient(ellipse at 75% 30%, rgba(37,99,235,0.32), transparent 55%), radial-gradient(ellipse at 25% 25%, rgba(255,255,255,0.14), transparent 50%), linear-gradient(160deg, #3a3a44 0%, #16161a 50%, #050507 100%); }
+  .bg-fla { background: radial-gradient(ellipse at 75% 75%, rgba(220,20,60,0.58), transparent 50%), radial-gradient(ellipse at 30% 25%, rgba(220,20,60,0.18), transparent 45%), linear-gradient(165deg, #0c0c0e 0%, #1a0408 60%, #000 100%); }
+  .bg-flu { background: radial-gradient(ellipse at 80% 75%, rgba(0,102,51,0.72), transparent 50%), radial-gradient(ellipse at 20% 25%, rgba(107,21,48,0.78), transparent 50%), radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.06), transparent 40%), linear-gradient(170deg, var(--flu-grena) 0%, var(--flu-grena-2) 50%, var(--flu-verde-2) 100%); }
+  .bg-55rj { background: radial-gradient(ellipse at 75% 70%, rgba(30,58,138,0.78), transparent 55%), radial-gradient(ellipse at 25% 25%, rgba(30,58,138,0.22), transparent 50%), linear-gradient(165deg, #0a0a0e 0%, #050b1d 60%, #000 100%); }
+  .bg-all { background: linear-gradient(160deg, #16161a 0%, #050507 100%); }
 
-  /* PRIZES — escuro original */
+  /* PRIZES */
   .prizes {
-    padding: 0 40px;
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 12px;
-    margin-bottom: 24px;
+    padding: 0 40px; display: grid;
+    grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 24px;
   }
   .prize-card {
-    background: linear-gradient(180deg, var(--gray-2) 0%, var(--gray-1) 100%);
-    border: 1px solid var(--border);
-    border-radius: 14px; padding: 14px;
+    background: linear-gradient(180deg, var(--gray-2), var(--gray-1));
+    border: 1px solid var(--border); border-radius: 14px; padding: 14px;
     display: flex; flex-direction: column; gap: 4px;
-    cursor: pointer; transition: transform .2s, border-color .2s, box-shadow .2s;
+    cursor: pointer; transition: transform .2s, border-color .2s;
     box-shadow: var(--shadow-inset-top), 0 4px 14px -8px rgba(0,0,0,0.7);
     position: relative; overflow: hidden;
   }
-  .prize-card::before {
-    content: '';
-    position: absolute;
-    top: 0; right: 0;
-    width: 70px; height: 70px;
-    background: radial-gradient(circle at top right, rgba(37,99,235,0.1) 0%, transparent 60%);
-    pointer-events: none;
-  }
-  .prize-card:hover {
-    transform: translateY(-3px);
-    border-color: var(--blue);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 10px 24px -10px var(--blue-glow);
-  }
-  .prize-icon {
-    width: 38px; height: 38px;
-    background: linear-gradient(180deg, var(--gray-3) 0%, var(--gray-2) 100%);
-    border: 1px solid var(--gray-3);
-    border-radius: 10px;
-    display: grid; place-items: center;
-    margin-bottom: 4px; font-size: 18px;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
-  }
+  .prize-card::before { content: ''; position: absolute; top: 0; right: 0; width: 70px; height: 70px; background: radial-gradient(circle at top right, rgba(37,99,235,0.1), transparent 60%); pointer-events: none; }
+  .prize-card:hover { transform: translateY(-3px); border-color: var(--blue); }
+  .prize-icon { width: 38px; height: 38px; background: linear-gradient(180deg, var(--gray-3), var(--gray-2)); border: 1px solid var(--gray-3); border-radius: 10px; display: grid; place-items: center; margin-bottom: 4px; font-size: 18px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.08); }
   .prize-title { font-weight: 700; font-size: 12px; line-height: 1.25; color: var(--white); }
   .prize-cost {
-    font-family: 'Anton', 'Bebas Neue', sans-serif;
-    font-size: 22px;
-    background: linear-gradient(180deg, #ffffff 0%, #b8b8c0 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
+    font-family: 'Anton', sans-serif; font-size: 22px;
+    background: linear-gradient(180deg, #fff, #b8b8c0);
+    -webkit-background-clip: text; background-clip: text;
     -webkit-text-fill-color: transparent;
-    letter-spacing: 1.5px;
-    margin-top: 2px;
+    letter-spacing: 1.5px; margin-top: 2px;
   }
   .prize-cost-label { font-size: 9px; color: var(--gray-5); text-transform: uppercase; letter-spacing: 1px; }
   .prize-desc { font-size: 10px; color: var(--gray-5); line-height: 1.3; }
   .prize-card.disabled { opacity: 0.35; cursor: not-allowed; }
-  .prize-card.disabled:hover { transform: none; border-color: var(--border); box-shadow: var(--shadow-inset-top), 0 4px 14px -8px rgba(0,0,0,0.7); }
+  .prize-card.disabled:hover { transform: none; border-color: var(--border); }
 
   /* FOOTER */
-  footer {
-    padding: 28px 40px;
-    border-top: 1px solid rgba(255,255,255,0.08);
-    margin-top: 28px;
-    color: rgba(255,255,255,0.5); font-size: 11px; text-align: center;
-  }
+  footer { padding: 28px 40px; border-top: 1px solid rgba(255,255,255,0.08); margin-top: 28px; color: rgba(255,255,255,0.5); font-size: 11px; text-align: center; }
   footer a { color: rgba(255,255,255,0.7); margin: 0 6px; text-decoration: none; }
-  footer a:hover { color: var(--blue-light); }
 
   /* MODAL */
   .modal-bg {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.86); backdrop-filter: blur(6px);
-    display: none; align-items: center; justify-content: center;
-    z-index: 200; padding: 24px;
+    position: fixed; inset: 0; background: rgba(0,0,0,0.86); backdrop-filter: blur(6px);
+    display: none; align-items: center; justify-content: center; z-index: 200; padding: 24px;
   }
   .modal-bg.open { display: flex; }
   .modal {
-    background: linear-gradient(180deg, var(--gray-1) 0%, var(--black-2) 100%);
-    border: 1px solid var(--border);
-    border-radius: 18px; padding: 28px;
-    max-width: 460px; width: 100%;
-    box-shadow: var(--shadow-lg);
-    position: relative;
+    background: linear-gradient(180deg, var(--gray-1), var(--black-2));
+    border: 1px solid var(--border); border-radius: 18px; padding: 28px;
+    max-width: 460px; width: 100%; box-shadow: var(--shadow-lg); position: relative;
   }
-  .modal.denied { border-color: var(--blue-deep); box-shadow: var(--shadow-lg), 0 0 30px -8px var(--blue-glow); }
-  .modal h3 {
-    font-family: 'Anton', 'Bebas Neue', sans-serif;
-    font-size: 28px; letter-spacing: 2px; margin-bottom: 6px;
-    text-transform: uppercase;
-  }
+  .modal.denied { border-color: #b91c1c; box-shadow: var(--shadow-lg), 0 0 30px -8px rgba(220,38,38,0.4); }
+  .modal h3 { font-family: 'Anton', sans-serif; font-size: 28px; letter-spacing: 2px; margin-bottom: 6px; text-transform: uppercase; }
   .modal-status {
-    display: inline-block;
-    font-size: 10px; letter-spacing: 1.5px;
+    display: inline-block; font-size: 10px; letter-spacing: 1.5px;
     background: linear-gradient(180deg, var(--blue-light), var(--blue-deep));
-    color: var(--white);
-    padding: 4px 8px; border-radius: 4px;
-    font-weight: 800;
-    text-transform: uppercase;
-    margin-bottom: 10px;
+    color: var(--white); padding: 4px 8px; border-radius: 4px;
+    font-weight: 800; text-transform: uppercase; margin-bottom: 10px;
   }
   .modal.denied .modal-status { background: linear-gradient(180deg, #f87171, #b91c1c); }
   .modal p { color: var(--gray-6); font-size: 14px; margin-bottom: 18px; }
   .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
-  .btn-secondary {
-    background: transparent; color: var(--gray-6);
-    border: 1px solid var(--border);
-    padding: 10px 18px; border-radius: 10px;
-    font-weight: 600; cursor: pointer;
-  }
+  .btn-secondary { background: transparent; color: var(--gray-6); border: 1px solid var(--border); padding: 10px 18px; border-radius: 10px; font-weight: 600; cursor: pointer; }
   .btn-primary {
-    background: linear-gradient(180deg, var(--blue-light) 0%, var(--blue-deep) 100%);
-    color: var(--white);
-    border: none; padding: 10px 22px; border-radius: 10px;
-    font-weight: 800; cursor: pointer;
-    text-transform: uppercase; letter-spacing: 1px; font-size: 12px;
+    background: linear-gradient(180deg, var(--blue-light), var(--blue-deep));
+    color: var(--white); border: none; padding: 10px 22px; border-radius: 10px;
+    font-weight: 800; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; font-size: 12px;
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 4px 12px -2px var(--blue-glow);
   }
 
-  /* RESPONSIVE */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: linear-gradient(180deg, #22c55e, #047857);
+    color: white; padding: 12px 18px; border-radius: 10px;
+    font-size: 13px; font-weight: 600;
+    box-shadow: 0 10px 30px -10px rgba(34,197,94,0.5);
+    z-index: 300; display: none; max-width: 400px;
+  }
+  .toast.show { display: block; animation: slideUp .3s; }
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  .loader { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.2); border-top-color: var(--white); border-radius: 50%; animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
   @media (max-width: 1280px) {
     .top-row { grid-template-columns: 1fr; }
     .banners { grid-template-columns: repeat(2, 1fr); }
@@ -650,35 +450,19 @@
     .banners { grid-template-columns: 1fr; }
     .prizes { grid-template-columns: repeat(2, 1fr); }
     .featured h2 { font-size: 34px; }
-    .rmnl-logo { width: 60px; }
-    .brand-title .word1, .brand-title .word2 { font-size: 26px; }
+    .rmnl-logo { width: 50px; }
+    .brand-title .word1, .brand-title .word2 { font-size: 22px; }
   }
 </style>
 </head>
 <body>
 
-<!-- DEV BAR -->
-<div class="dev-bar">
-  <strong>Preview:</strong>
-  <span>Visualizar como vendedor</span>
-  <select id="userSelect">
-    <option value="milena" selected>Milena Aguiar — VR 55 — 178 pts (Ouro)</option>
-    <option value="sander">Sander Ferreira — FLA RESENDE — 145 pts</option>
-    <option value="emilly">Emilly Lima — FLU VR — 230 pts</option>
-    <option value="bruno">Bruno da Silva — FLU PLAZA — 67 pts</option>
-    <option value="danilo">Danilo Alves — NIG 55 — 12 pts</option>
-  </select>
-  <span style="margin-left:auto;color:var(--gray-4);">Arena Roma v9</span>
-</div>
-
-<!-- HEADER -->
-<header class="brand">
-  <div class="brand-left">
-    <svg class="rmnl-logo" viewBox="0 0 220 200" xmlns="http://www.w3.org/2000/svg" aria-label="RMNL Romanelli">
+<!-- LOGIN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <svg class="login-logo" viewBox="0 0 220 200" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <style>
-          .lt { font-family: 'Anton', 'Arial Black', sans-serif; font-size: 130px; font-weight: 900; fill: #ffffff; letter-spacing: -10px; }
-        </style>
+        <style>.lt{font-family:'Anton',sans-serif;font-size:130px;font-weight:900;fill:#fff;letter-spacing:-10px;}</style>
         <clipPath id="r-top"><rect x="-5" y="0" width="65" height="48"/></clipPath>
         <clipPath id="r-bot"><rect x="-5" y="48" width="65" height="55"/></clipPath>
         <clipPath id="m-top"><rect x="60" y="0" width="100" height="52"/></clipPath>
@@ -689,7 +473,7 @@
         <clipPath id="l-bot"><rect x="108" y="153" width="100" height="55"/></clipPath>
       </defs>
       <text x="-4" y="95" class="lt" clip-path="url(#r-top)">R</text>
-      <text x="3"  y="98" class="lt" clip-path="url(#r-bot)">R</text>
+      <text x="3" y="98" class="lt" clip-path="url(#r-bot)">R</text>
       <text x="46" y="95" class="lt" clip-path="url(#m-top)">M</text>
       <text x="52" y="98" class="lt" clip-path="url(#m-bot)">M</text>
       <text x="36" y="195" class="lt" clip-path="url(#n-top)">N</text>
@@ -697,260 +481,441 @@
       <text x="104" y="195" class="lt" clip-path="url(#l-top)">L</text>
       <text x="111" y="198" class="lt" clip-path="url(#l-bot)">L</text>
     </svg>
-    <div class="brand-title">
-      <span class="word1">ARENA</span>
-      <span class="word2">ROMA</span>
+    <div class="login-brand">
+      <span class="word1">ARENA ROMA</span>
+      <span class="word2">Portal do Vendedor</span>
+    </div>
+    <div class="login-error" id="loginError">CPF ou senha inválidos.</div>
+    <form onsubmit="event.preventDefault(); doLogin();">
+      <div class="login-field">
+        <label>CPF</label>
+        <input type="text" id="loginCpf" placeholder="000.000.000-00" autocomplete="username">
+      </div>
+      <div class="login-field">
+        <label>Senha</label>
+        <input type="password" id="loginPwd" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="login-btn" type="submit" id="btnLogin">Entrar</button>
+    </form>
+    <div class="login-hint">
+      Não tem cadastro?<br>Fala com sua supervisora ou com a Mariana.
     </div>
   </div>
-  <div class="user-chip">
-    <div class="avatar" id="userAvatar"></div>
-    <div class="user-info">
-      <div class="user-name" id="userName"></div>
-      <div class="user-meta" id="userMeta"></div>
-    </div>
-    <div class="user-points">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-      <span id="userPts"></span>
-    </div>
-  </div>
-</header>
-
-<!-- HERO + KPIs -->
-<section class="top-row">
-  <div class="hero-block">
-    <h1 id="heroSaudacao">Salve, vendedor.</h1>
-    <div class="activity-strip">
-      <span class="pill"><span class="live-dot"></span><strong id="actVendas">0</strong> vendas hoje</span>
-      <span class="pill">UPT <strong id="actUPT">0</strong></span>
-      <span class="pill"><strong id="actCRM">0</strong> CRM</span>
-    </div>
-  </div>
-  <div class="kpis">
-    <div class="kpi">
-      <div class="kpi-label">Pontos</div>
-      <div class="kpi-value" id="kpiPts">—</div>
-      <div class="kpi-sub">expiram em 12 meses</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Ranking</div>
-      <div class="kpi-value" id="kpiRank">—</div>
-      <div class="kpi-sub">de 35 vendedores</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Pra você entrar</div>
-      <div class="kpi-value" id="kpiActive">—</div>
-      <div class="kpi-sub">de 5 corridas</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Nível</div>
-      <div class="kpi-value" id="kpiLevel">—</div>
-      <div class="kpi-sub" id="kpiLevelSub">próximo: —</div>
-    </div>
-  </div>
-</section>
-
-<!-- FEATURED -->
-<section class="featured" onclick="clickFeatured()">
-  <div class="featured-trophy" aria-hidden="true">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
-      <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
-      <path d="M4 22h16"/>
-      <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
-      <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
-      <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
-    </svg>
-  </div>
-  <div class="featured-content">
-    <h2>Arena Mensal</h2>
-    <p class="featured-desc">A corrida geral do mês — aberta a todos. Quem mais cresce em vendas vs mês anterior leva. Top de cada uma das 11 lojas ganha pontos.</p>
-    <div class="featured-meta">
-      <div><strong>Encerra</strong>25/05/2026 · 23:59</div>
-      <div><strong>Prêmio</strong>15 pts + brinde</div>
-      <div><strong>Aberto a</strong>Todos</div>
-    </div>
-  </div>
-  <button class="featured-cta" onclick="event.stopPropagation(); clickFeatured()">Participar</button>
-</section>
-
-<div class="section-title">
-  <h3>Outras corridas ativas</h3>
-  <div class="info">1 geral premium · 3 exclusivas por grupo</div>
 </div>
 
-<section class="banners" id="bannersGrid"></section>
+<!-- APP -->
+<div class="app" id="app">
 
-<div class="section-title">
-  <h3>Trocar pontos</h3>
-  <div class="info">Você tem <strong id="ptsCount">0</strong> pontos disponíveis.</div>
+  <header class="brand">
+    <div class="brand-left">
+      <svg class="rmnl-logo" viewBox="0 0 220 200" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <style>.lt2{font-family:'Anton',sans-serif;font-size:130px;font-weight:900;fill:#fff;letter-spacing:-10px;}</style>
+          <clipPath id="r-top3"><rect x="-5" y="0" width="65" height="48"/></clipPath>
+          <clipPath id="r-bot3"><rect x="-5" y="48" width="65" height="55"/></clipPath>
+          <clipPath id="m-top3"><rect x="60" y="0" width="100" height="52"/></clipPath>
+          <clipPath id="m-bot3"><rect x="60" y="52" width="100" height="52"/></clipPath>
+          <clipPath id="n-top3"><rect x="40" y="98" width="68" height="50"/></clipPath>
+          <clipPath id="n-bot3"><rect x="40" y="148" width="68" height="56"/></clipPath>
+          <clipPath id="l-top3"><rect x="108" y="98" width="100" height="55"/></clipPath>
+          <clipPath id="l-bot3"><rect x="108" y="153" width="100" height="55"/></clipPath>
+        </defs>
+        <text x="-4" y="95" class="lt2" clip-path="url(#r-top3)">R</text>
+        <text x="3" y="98" class="lt2" clip-path="url(#r-bot3)">R</text>
+        <text x="46" y="95" class="lt2" clip-path="url(#m-top3)">M</text>
+        <text x="52" y="98" class="lt2" clip-path="url(#m-bot3)">M</text>
+        <text x="36" y="195" class="lt2" clip-path="url(#n-top3)">N</text>
+        <text x="44" y="198" class="lt2" clip-path="url(#n-bot3)">N</text>
+        <text x="104" y="195" class="lt2" clip-path="url(#l-top3)">L</text>
+        <text x="111" y="198" class="lt2" clip-path="url(#l-bot3)">L</text>
+      </svg>
+      <div class="brand-title">
+        <span class="word1">ARENA</span>
+        <span class="word2">ROMA</span>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="user-chip">
+        <div class="avatar" id="userAvatar"></div>
+        <div class="user-info">
+          <div class="user-name" id="userName">—</div>
+          <div class="user-meta" id="userMeta">—</div>
+        </div>
+        <div class="user-points">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <span id="userPts">0</span>
+        </div>
+      </div>
+      <button class="logout-link" onclick="doLogout()" title="Sair">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <section class="top-row">
+    <div class="hero-block">
+      <h1 id="heroSaudacao">Salve, vendedor.</h1>
+      <p style="color: var(--gray-6); font-size: 13px;">Sua arena. Suas corridas, seus pontos, seus prêmios.</p>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="kpi-label">Pontos</div><div class="kpi-value" id="kpiPts">—</div><div class="kpi-sub">expiram em 12 meses</div></div>
+      <div class="kpi"><div class="kpi-label">Ranking</div><div class="kpi-value" id="kpiRank">—</div><div class="kpi-sub" id="kpiRankSub">de —</div></div>
+      <div class="kpi"><div class="kpi-label">Pra você entrar</div><div class="kpi-value" id="kpiActive">—</div><div class="kpi-sub" id="kpiActiveSub">de — corridas</div></div>
+      <div class="kpi"><div class="kpi-label">Nível</div><div class="kpi-value" id="kpiLevel">—</div><div class="kpi-sub" id="kpiLevelSub">—</div></div>
+    </div>
+  </section>
+
+  <!-- FEATURED (primeira campanha geral aberta a todos) -->
+  <section class="featured" id="featuredEl" onclick="clickCamp(featuredCamp?.id)">
+    <div class="featured-trophy" aria-hidden="true">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+        <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+        <path d="M4 22h16"/>
+        <path d="M10 14.66V17"/>
+        <path d="M14 14.66V17"/>
+        <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
+      </svg>
+    </div>
+    <div class="featured-content">
+      <h2 id="featuredTtl">—</h2>
+      <p class="featured-desc" id="featuredDesc">—</p>
+      <div class="featured-meta" id="featuredMeta"></div>
+    </div>
+    <button class="featured-cta" onclick="event.stopPropagation(); clickCamp(featuredCamp?.id)">Participar</button>
+  </section>
+
+  <div class="section-title">
+    <h3>Outras corridas ativas</h3>
+    <div class="info" id="campsSub">—</div>
+  </div>
+  <section class="banners" id="bannersGrid"></section>
+
+  <div class="section-title">
+    <h3>Trocar pontos</h3>
+    <div class="info">Você tem <strong id="ptsCount">0</strong> pontos disponíveis.</div>
+  </div>
+  <section class="prizes" id="prizesGrid"></section>
+
+  <footer>Arena Roma · Grupo Romanelli</footer>
 </div>
-<section class="prizes" id="prizesGrid"></section>
 
-<footer>
-  Arena Roma · Grupo Romanelli ·
-  <a href="#">Regras</a> · <a href="#">Termo de adesão</a> · <a href="#">Suporte (Mariana / Dara)</a>
-</footer>
-
+<!-- MODAL -->
 <div class="modal-bg" id="modalBg" onclick="closeModalIfBg(event)">
   <div class="modal" id="modalCard">
     <span class="modal-status" id="modalStatus">Confirmação</span>
     <h3 id="modalTitle">Participar</h3>
-    <p id="modalText">Os pontos só contam vendas com cupom finalizado e sem devolução em 7 dias.</p>
+    <p id="modalText">—</p>
     <div class="modal-actions">
       <button class="btn-secondary" id="modalCancel" onclick="closeModal()">Cancelar</button>
-      <button class="btn-primary" id="modalConfirm" onclick="closeModal()">Confirmar</button>
+      <button class="btn-primary" id="modalConfirm" onclick="modalConfirmAction()">Confirmar</button>
     </div>
   </div>
 </div>
 
+<div class="toast" id="toast">OK</div>
+
 <script>
-const USERS = {
-  milena: { nome: 'Milena Aguiar', loja: 'VR 55', grupo: '55RJ', supervisora: 'Beatriz', pontos: 178, rank: 3, hoje: { vendas: 6, upt: 1.8, crm: 3 } },
-  sander: { nome: 'Sander Ferreira', loja: 'FLA RESENDE', grupo: 'FLA', supervisora: 'Beatriz', pontos: 145, rank: 4, hoje: { vendas: 4, upt: 1.5, crm: 2 } },
-  emilly: { nome: 'Emilly Lima', loja: 'FLU VR', grupo: 'FLU', supervisora: 'Beatriz', pontos: 230, rank: 1, hoje: { vendas: 9, upt: 2.1, crm: 5 } },
-  bruno:  { nome: 'Bruno da Silva', loja: 'FLU PLAZA', grupo: 'FLU', supervisora: 'Juliana', pontos: 67, rank: 12, hoje: { vendas: 3, upt: 1.3, crm: 1 } },
-  danilo: { nome: 'Danilo Alves', loja: 'NIG 55', grupo: '55RJ', supervisora: 'Rhuanã', pontos: 12, rank: 28, hoje: { vendas: 1, upt: 1.0, crm: 0 } },
-};
+const SUPABASE_URL = 'https://bmnindhstgwncpqskfma.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtbmluZGhzdGd3bmNwcXNrZm1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MjM4MDQsImV4cCI6MjA5NDE5OTgwNH0.aPQw8ZtstrtwEhuDXKv3lx6B29dQycvNDgJ9NztkUe0';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-const BANNERS = [
-  { id: 'premium', titulo: 'Arena Premium', desc: 'Corrida elite da rede. Só quem acumulou pontos entra.', bg: 'bg-premium', watermark: '100+', tag: { text: '+100 PTS · GERAL', class: 'blue' }, prize: 'Ingresso jogo + 30 pts', timer: 'Encerra Dom 23:59', access: (u) => u.pontos >= 100, lockReason: (u) => `Você tem ${u.pontos} pontos. Faltam ${100 - u.pontos} pontos pra desbloquear.` },
-  { id: 'fla', titulo: 'Cromos do Manto', desc: 'Quem vender mais peças oficiais Flamengo na semana.', bg: 'bg-fla', watermark: 'FLA', tag: { text: 'EXCLUSIVO FLA', class: 'elite' }, prize: '10 pts + brinde', timer: 'Encerra Sáb 23:59', access: (u) => u.grupo === 'FLA', lockReason: 'Esta corrida é exclusiva das lojas FLA (Via Brasil · Resende).' },
-  { id: 'flu', titulo: 'Caçada Tricolor', desc: 'Maior UPT em produtos Fluminense na semana.', bg: 'bg-flu', watermark: 'FLU', tag: { text: 'EXCLUSIVO FLU', class: 'elite' }, prize: '10 pts + camisa drop', timer: 'Encerra Sáb 23:59', access: (u) => u.grupo === 'FLU', lockReason: 'Esta corrida é exclusiva das 6 lojas FLU.' },
-  { id: '55rj', titulo: 'Street Roma', desc: 'Top vendedor de streetwear das 3 lojas 55RJ.', bg: 'bg-55rj', watermark: '55', tag: { text: 'EXCLUSIVO 55RJ', class: 'elite' }, prize: '10 pts + cap exclusiva', timer: 'Encerra Sáb 23:59', access: (u) => u.grupo === '55RJ', lockReason: 'Esta corrida é exclusiva das lojas 55RJ (NIG · TOP · VR).' },
-];
+let currentUser = null;
+let cache = { vendedores: [], campanhas: [], premios: [] };
+let featuredCamp = null;
+let modalAction = null;
 
-const PRIZES = [
-  { icon: '💸', titulo: 'R$ 100 desconto', cost: 180, desc: 'No CPF do vendedor.' },
-  { icon: '💸', titulo: 'R$ 200 desconto', cost: 320, desc: 'No CPF do vendedor.' },
-  { icon: '🎒', titulo: 'Mochila Arena Roma', cost: 250, desc: 'Edição limitada.' },
-  { icon: '🧢', titulo: 'Cap exclusiva', cost: 180, desc: 'Drop trimestral.' },
-  { icon: '🎟️', titulo: 'Ingresso jogo', cost: 600, desc: 'Fla / Flu.' },
-  { icon: '🌴', titulo: 'Day-off pago', cost: 700, desc: 'Aviso 30 dias.' },
-];
-
-let currentUser = USERS.milena;
-
-function nivelDe(pts) {
-  if (pts >= 200) return { atual: 'Diamante', prox: '—', necessario: 0 };
-  if (pts >= 100) return { atual: 'Ouro', prox: 'Diamante', necessario: 200 - pts };
-  if (pts >= 30)  return { atual: 'Prata', prox: 'Ouro', necessario: 100 - pts };
-  return { atual: 'Bronze', prox: 'Prata', necessario: 30 - pts };
+function nivel(pts) {
+  if (pts >= 200) return 'Diamante';
+  if (pts >= 100) return 'Ouro';
+  if (pts >= 30) return 'Prata';
+  return 'Bronze';
+}
+function nivelNext(pts) {
+  if (pts >= 200) return { prox:'—', falta:0 };
+  if (pts >= 100) return { prox:'Diamante', falta:200-pts };
+  if (pts >= 30) return { prox:'Ouro', falta:100-pts };
+  return { prox:'Prata', falta:30-pts };
 }
 
-function renderUser() {
-  const u = currentUser;
-  document.getElementById('userName').textContent = u.nome;
-  document.getElementById('userMeta').textContent = `${u.loja} · Sup. ${u.supervisora}`;
-  document.getElementById('userPts').textContent = `${u.pontos} pts`;
-  document.getElementById('heroSaudacao').textContent = `Salve, ${u.nome.split(' ')[0]}.`;
-  document.getElementById('kpiPts').textContent = u.pontos;
-  document.getElementById('kpiRank').textContent = `#${u.rank}`;
-  document.getElementById('ptsCount').textContent = u.pontos;
-  document.getElementById('actVendas').textContent = u.hoje.vendas;
-  document.getElementById('actUPT').textContent = u.hoje.upt.toFixed(1);
-  document.getElementById('actCRM').textContent = u.hoje.crm;
-
-  const nivel = nivelDe(u.pontos);
-  document.getElementById('kpiLevel').textContent = nivel.atual;
-  document.getElementById('kpiLevelSub').textContent = nivel.prox === '—'
-    ? 'nível máximo'
-    : `faltam ${nivel.necessario} pts → ${nivel.prox}`;
-  document.getElementById('userAvatar').textContent = u.nome.split(' ').map(p => p[0]).slice(0,2).join('');
+let toastT;
+function toast(msg, err) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = err ? 'linear-gradient(180deg, #f87171, #b91c1c)' : 'linear-gradient(180deg, #22c55e, #047857)';
+  t.classList.add('show');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => t.classList.remove('show'), err ? 4500 : 2800);
 }
 
-function renderBanners() {
+async function doLogin() {
+  const cpf = document.getElementById('loginCpf').value.trim();
+  const pwd = document.getElementById('loginPwd').value;
+  const errEl = document.getElementById('loginError');
+  const btn = document.getElementById('btnLogin');
+  errEl.classList.remove('show');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span>';
+  try {
+    const { data, error } = await sb.rpc('login_vendedor', { _cpf: cpf, _senha: pwd });
+    if (error) throw error;
+    if (!data || data.length === 0) throw new Error('CPF ou senha inválidos.');
+    const d = data[0];
+    currentUser = { id: d.out_id, nome: d.out_nome, cpf: d.out_cpf, loja: d.out_loja, grupo: d.out_grupo, supervisora: d.out_supervisora, pontos: d.out_pontos };
+    sessionStorage.setItem('arena_vendedor', JSON.stringify(currentUser));
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').classList.add('shown');
+    await refreshAll();
+  } catch (e) {
+    errEl.textContent = e.message || 'Erro ao fazer login.';
+    errEl.classList.add('show');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+  }
+}
+
+function doLogout() {
+  currentUser = null;
+  sessionStorage.removeItem('arena_vendedor');
+  document.getElementById('app').classList.remove('shown');
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginCpf').value = '';
+  document.getElementById('loginPwd').value = '';
+  document.getElementById('loginError').classList.remove('show');
+}
+
+async function refreshAll() {
+  try {
+    const [v, c, p] = await Promise.all([
+      sb.from('vendedores').select('id, pontos, status').eq('status', 'ativo'),
+      sb.from('campanhas').select('*').eq('status', 'live').order('created_at', { ascending: false }),
+      sb.from('premios').select('*').eq('ativo', true).order('custo_pts')
+    ]);
+    cache.vendedores = v.data || [];
+    cache.campanhas = c.data || [];
+    cache.premios = p.data || [];
+    // atualizar pontos do current user
+    const me = cache.vendedores.find(x => x.id === currentUser.id);
+    if (me) currentUser.pontos = me.pontos;
+    render();
+  } catch (e) {
+    toast('Erro: ' + e.message, true);
+  }
+}
+
+function render() {
+  // User chip
+  document.getElementById('userName').textContent = currentUser.nome;
+  document.getElementById('userMeta').textContent = `${currentUser.loja} · Sup. ${currentUser.supervisora}`;
+  document.getElementById('userPts').textContent = `${currentUser.pontos} pts`;
+  document.getElementById('userAvatar').textContent = currentUser.nome.split(' ').map(p => p[0]).slice(0,2).join('').toUpperCase();
+
+  document.getElementById('heroSaudacao').textContent = `Salve, ${currentUser.nome.split(' ')[0]}.`;
+  document.getElementById('kpiPts').textContent = currentUser.pontos;
+  document.getElementById('ptsCount').textContent = currentUser.pontos;
+
+  // Ranking
+  const sorted = cache.vendedores.slice().sort((a,b) => b.pontos - a.pontos);
+  const rank = sorted.findIndex(x => x.id === currentUser.id) + 1;
+  document.getElementById('kpiRank').textContent = rank ? '#' + rank : '—';
+  document.getElementById('kpiRankSub').textContent = `de ${cache.vendedores.length}`;
+
+  // Nível
+  const nv = nivel(currentUser.pontos);
+  document.getElementById('kpiLevel').textContent = nv;
+  const nx = nivelNext(currentUser.pontos);
+  document.getElementById('kpiLevelSub').textContent = nx.falta > 0 ? `faltam ${nx.falta} pts → ${nx.prox}` : 'nível máximo';
+
+  // Campanhas — separar featured + grid
+  const camps = cache.campanhas;
+  // featured = primeira campanha "geral-simples" aberta a todos
+  featuredCamp = camps.find(c => c.tipo === 'geral-simples' && c.regra_acesso === 'todos') || camps[0] || null;
+  const outras = featuredCamp ? camps.filter(c => c.id !== featuredCamp.id) : camps;
+
+  if (featuredCamp) {
+    document.getElementById('featuredEl').style.display = 'flex';
+    document.getElementById('featuredTtl').textContent = featuredCamp.titulo;
+    document.getElementById('featuredDesc').textContent = featuredCamp.descricao || '';
+    document.getElementById('featuredMeta').innerHTML = `
+      <div><strong>Encerra</strong>${formatDate(featuredCamp.fim)}</div>
+      <div><strong>Prêmio</strong>${escapeHtml(featuredCamp.premio || '—')}</div>
+      <div><strong>Acesso</strong>${featuredCamp.regra_acesso}</div>
+    `;
+  } else {
+    document.getElementById('featuredEl').style.display = 'none';
+  }
+
+  // Banners
+  let activeCount = 0;
   const grid = document.getElementById('bannersGrid');
-  grid.innerHTML = '';
-  let activeCount = 1;
-  BANNERS.forEach(b => {
-    if (b.access(currentUser)) activeCount++;
-    grid.insertAdjacentHTML('beforeend', `
-      <div class="banner ${b.bg}" onclick="clickBanner('${b.id}')">
-        <div class="banner-watermark">${b.watermark}</div>
-        <div class="banner-grain"></div>
+  grid.innerHTML = outras.map(c => {
+    const can = canAccess(c);
+    if (can) activeCount++;
+    const bgClass = bgFor(c);
+    const wm = watermarkFor(c);
+    return `
+      <div class="banner ${bgClass}" onclick="clickCamp('${c.id}')">
+        <div class="banner-watermark">${wm}</div>
         <div class="banner-sheen"></div>
         <div class="banner-content">
-          <span class="banner-tag ${b.tag.class}">${b.tag.text}</span>
-          <div class="banner-title">${b.titulo}</div>
-          <div class="banner-desc">${b.desc}</div>
+          <span class="banner-tag ${c.tipo === 'geral-premium' ? 'blue' : (c.tipo === 'grupo' ? 'elite' : '')}">${tagFor(c)}</span>
+          <div class="banner-title">${escapeHtml(c.titulo)}</div>
+          <div class="banner-desc">${escapeHtml(c.descricao || '')}</div>
           <div class="banner-meta">
-            <div class="banner-prize"><strong>${b.prize}</strong><br>${b.timer}</div>
-            <button class="banner-btn" onclick="event.stopPropagation(); clickBanner('${b.id}')">Entrar</button>
+            <div class="banner-prize"><strong>${escapeHtml(c.premio || '—')}</strong><br>Encerra ${formatDate(c.fim)}</div>
+            <button class="banner-btn" onclick="event.stopPropagation(); clickCamp('${c.id}')">Entrar</button>
           </div>
         </div>
       </div>
-    `);
-  });
+    `;
+  }).join('') || '<p style="color:var(--gray-5);grid-column:1/-1;padding:20px;text-align:center;">Sem outras corridas no momento.</p>';
+
+  if (featuredCamp && canAccess(featuredCamp)) activeCount++;
   document.getElementById('kpiActive').textContent = activeCount;
-}
+  document.getElementById('kpiActiveSub').textContent = `de ${camps.length} corridas`;
+  document.getElementById('campsSub').textContent = `${camps.length} ativa(s)`;
 
-function renderPrizes() {
-  const grid = document.getElementById('prizesGrid');
-  grid.innerHTML = '';
-  PRIZES.forEach(p => {
-    const can = currentUser.pontos >= p.cost;
-    grid.insertAdjacentHTML('beforeend', `
-      <div class="prize-card ${can ? '' : 'disabled'}" onclick="${can ? `openModalSimple('Resgatar: ${p.titulo}', 'Você vai trocar ${p.cost} pontos por ${p.titulo}.', 'success')` : `openModalSimple('${p.titulo}', 'Você precisa de ${p.cost} pontos pra resgatar. Tem ${currentUser.pontos}. Faltam ${p.cost - currentUser.pontos}.', 'denied')`}">
-        <div class="prize-icon">${p.icon}</div>
-        <div class="prize-title">${p.titulo}</div>
-        <div class="prize-cost">${p.cost}<span class="prize-cost-label" style="margin-left:6px;">pts</span></div>
-        <div class="prize-desc">${p.desc}</div>
+  // Prizes
+  const pg = document.getElementById('prizesGrid');
+  pg.innerHTML = cache.premios.map(p => {
+    const can = currentUser.pontos >= p.custo_pts && (p.estoque === null || p.estoque > 0);
+    return `
+      <div class="prize-card ${can ? '' : 'disabled'}" onclick="${can ? `pedirResgate('${p.id}','${escapeAttr(p.titulo)}',${p.custo_pts})` : `mostrarBloqueado('${escapeAttr(p.titulo)}',${p.custo_pts},${p.estoque ?? 'null'})`}">
+        <div class="prize-icon">${p.icone}</div>
+        <div class="prize-title">${escapeHtml(p.titulo)}</div>
+        <div class="prize-cost">${p.custo_pts}<span class="prize-cost-label" style="margin-left:6px;">pts</span></div>
+        <div class="prize-desc">${escapeHtml(p.descricao || '')}${p.estoque !== null ? `<br><span style="color:var(--gray-5);">Estoque: ${p.estoque}</span>` : ''}</div>
       </div>
-    `);
-  });
+    `;
+  }).join('') || '<p style="color:var(--gray-5);grid-column:1/-1;padding:20px;text-align:center;">Sem prêmios disponíveis.</p>';
 }
 
-function refresh() { renderUser(); renderBanners(); renderPrizes(); }
-
-document.getElementById('userSelect').addEventListener('change', e => {
-  currentUser = USERS[e.target.value];
-  refresh();
-});
-
-function clickFeatured() {
-  openModalSimple('Arena Mensal', 'Os pontos só contam vendas com cupom finalizado e sem devolução em 7 dias.', 'success');
+function canAccess(c) {
+  const a = c.regra_acesso;
+  if (a === 'todos') return true;
+  if (a === '+100 pts') return currentUser.pontos >= 100;
+  if (a === '+200 pts') return currentUser.pontos >= 200;
+  if (a === 'FLA' || a === 'FLU' || a === '55RJ') return currentUser.grupo === a;
+  return true;
 }
 
-function clickBanner(bannerId) {
-  const b = BANNERS.find(x => x.id === bannerId);
-  if (!b) return;
-  const canAccess = b.access(currentUser);
-  if (canAccess) {
-    openModalSimple(b.titulo, 'Os pontos só contam vendas com cupom finalizado e sem devolução em 7 dias.', 'success');
+function bgFor(c) {
+  if (c.regra_acesso === 'FLA') return 'bg-fla';
+  if (c.regra_acesso === 'FLU') return 'bg-flu';
+  if (c.regra_acesso === '55RJ') return 'bg-55rj';
+  if (c.tipo === 'geral-premium') return 'bg-premium';
+  return 'bg-all';
+}
+function watermarkFor(c) {
+  if (c.regra_acesso === 'FLA') return 'FLA';
+  if (c.regra_acesso === 'FLU') return 'FLU';
+  if (c.regra_acesso === '55RJ') return '55';
+  if (c.regra_acesso === '+100 pts') return '100+';
+  if (c.regra_acesso === '+200 pts') return '200+';
+  return '★';
+}
+function tagFor(c) {
+  if (c.regra_acesso === 'FLA') return 'EXCLUSIVO FLA';
+  if (c.regra_acesso === 'FLU') return 'EXCLUSIVO FLU';
+  if (c.regra_acesso === '55RJ') return 'EXCLUSIVO 55RJ';
+  if (c.regra_acesso === '+100 pts') return '+100 PTS · GERAL';
+  if (c.regra_acesso === '+200 pts') return '+200 PTS · GERAL';
+  return 'AO VIVO';
+}
+
+function clickCamp(id) {
+  if (!id) return;
+  const c = cache.campanhas.find(x => x.id === id);
+  if (!c) return;
+  const can = canAccess(c);
+  if (can) {
+    openModal(c.titulo, 'Os pontos só contam vendas com cupom finalizado e sem devolução em 7 dias.', 'success', null);
   } else {
-    const reason = typeof b.lockReason === 'function' ? b.lockReason(currentUser) : b.lockReason;
-    openModalSimple(b.titulo, reason, 'denied');
+    const reason = (() => {
+      if (c.regra_acesso === '+100 pts') return `Você tem ${currentUser.pontos} pontos. Faltam ${100 - currentUser.pontos} pra entrar.`;
+      if (c.regra_acesso === '+200 pts') return `Você tem ${currentUser.pontos} pontos. Faltam ${200 - currentUser.pontos} pra entrar.`;
+      if (c.regra_acesso === 'FLA') return 'Esta corrida é exclusiva das lojas FLA.';
+      if (c.regra_acesso === 'FLU') return 'Esta corrida é exclusiva das lojas FLU.';
+      if (c.regra_acesso === '55RJ') return 'Esta corrida é exclusiva das lojas 55RJ.';
+      return 'Você não tem acesso a essa corrida no momento.';
+    })();
+    openModal(c.titulo, reason, 'denied', null);
   }
 }
 
-function openModalSimple(title, text, type) {
-  const modalCard = document.getElementById('modalCard');
+async function pedirResgate(premioId, premioNome, custo) {
+  openModal(`Resgatar: ${premioNome}`, `Você vai trocar ${custo} pontos por ${premioNome}. Confirma?`, 'success', async () => {
+    try {
+      const { error } = await sb.rpc('pedir_resgate', { _vendedor_cpf: currentUser.cpf, _premio_id: premioId });
+      if (error) throw error;
+      toast('Pedido enviado! Aguarde aprovação da Mariana ou Dara.');
+      closeModal();
+      await refreshAll();
+    } catch (e) {
+      closeModal();
+      toast(e.message, true);
+    }
+  });
+}
+
+function mostrarBloqueado(nome, custo, estoque) {
+  let reason;
+  if (estoque !== null && estoque !== undefined && estoque <= 0) {
+    reason = `${nome} está sem estoque no momento.`;
+  } else {
+    reason = `Você tem ${currentUser.pontos} pontos. Precisa de ${custo}. Faltam ${custo - currentUser.pontos}.`;
+  }
+  openModal(nome, reason, 'denied', null);
+}
+
+function openModal(title, text, type, action) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalText').textContent = text;
+  const card = document.getElementById('modalCard');
   const status = document.getElementById('modalStatus');
   const cancel = document.getElementById('modalCancel');
   const confirm = document.getElementById('modalConfirm');
-
-  document.getElementById('modalTitle').textContent = title;
-  document.getElementById('modalText').textContent = text;
-
+  modalAction = action;
   if (type === 'denied') {
-    modalCard.classList.add('denied');
+    card.classList.add('denied');
     status.textContent = 'Não disponível';
     cancel.style.display = 'none';
     confirm.textContent = 'Entendi';
-  } else {
-    modalCard.classList.remove('denied');
+  } else if (action) {
+    card.classList.remove('denied');
     status.textContent = 'Confirmação';
     cancel.style.display = '';
     confirm.textContent = 'Confirmar';
+  } else {
+    card.classList.remove('denied');
+    status.textContent = 'Info';
+    cancel.style.display = 'none';
+    confirm.textContent = 'OK';
   }
-
   document.getElementById('modalBg').classList.add('open');
 }
-
-function closeModal() { document.getElementById('modalBg').classList.remove('open'); }
+function modalConfirmAction() { if (modalAction) modalAction(); else closeModal(); }
+function closeModal() { document.getElementById('modalBg').classList.remove('open'); modalAction = null; }
 function closeModalIfBg(e) { if (e.target.id === 'modalBg') closeModal(); }
 
-refresh();
+function escapeHtml(s) { return String(s||'').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c])); }
+function escapeAttr(s) { return String(s||'').replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
+function formatDate(s) { if (!s) return '—'; const d = new Date(s); return d.toLocaleDateString('pt-BR'); }
+
+// AUTO-LOGIN
+(function init() {
+  const saved = sessionStorage.getItem('arena_vendedor');
+  if (saved) {
+    try {
+      currentUser = JSON.parse(saved);
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('app').classList.add('shown');
+      refreshAll();
+    } catch (e) { sessionStorage.removeItem('arena_vendedor'); }
+  }
+  document.getElementById('loginPwd').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+})();
 </script>
 </body>
 </html>
