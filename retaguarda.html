@@ -1724,4 +1724,55 @@ async function pdvAplicar() {
     await refreshAll();
   } catch (e) {
     toast(e.message, true);
-    btn.disable
+    btn.disabled = false;
+    btn.textContent = 'Aplicar pontos';
+  }
+}
+
+// ====== MODAL ======
+function showModal(html) {
+  document.getElementById('modalCard').innerHTML = html;
+  document.getElementById('modalBg').classList.add('open');
+}
+function closeModal(e) {
+  if (e && e.target.id !== 'modalBg') return;
+  document.getElementById('modalBg').classList.remove('open');
+}
+
+// ====== HELPERS ======
+function escapeHtml(s) { return String(s||'').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c])); }
+function escapeAttr(s) { return String(s||'').replace(/"/g, '&quot;'); }
+function formatDate(s) { if (!s) return '—'; const d = new Date(s); return d.toLocaleDateString('pt-BR'); }
+
+// ====== AUTO-LOGIN se houver sessão salva ======
+(function init() {
+  const saved = sessionStorage.getItem('arena_admin');
+  if (saved) {
+    try {
+      currentAdmin = JSON.parse(saved);
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('app').classList.add('shown');
+      document.getElementById('navName').textContent = currentAdmin.nome;
+      document.getElementById('navRole').textContent = currentAdmin.role;
+      document.getElementById('navAvatar').textContent = currentAdmin.nome.slice(0,2).toUpperCase();
+      refreshAll();
+      setupRealtime();
+      setupAutoRefresh();
+    } catch (e) { sessionStorage.removeItem('arena_admin'); }
+  } else {
+    // Pré-preencher se houver "lembrar"
+    const rem = localStorage.getItem('arena_admin_remember');
+    if (rem) {
+      try {
+        const { cpf, pwd } = JSON.parse(rem);
+        document.getElementById('loginCpf').value = cpf || '';
+        document.getElementById('loginPwd').value = pwd || '';
+        document.getElementById('loginRemember').checked = true;
+      } catch (e) {}
+    }
+  }
+  document.getElementById('loginPwd').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+})();
+</script>
+</body>
+</html>

@@ -1024,4 +1024,50 @@ function openModal(title, text, type, action) {
     status.textContent = 'Não disponível';
     cancel.style.display = 'none';
     confirm.textContent = 'Entendi';
-  } else if (
+  } else if (action) {
+    card.classList.remove('denied');
+    status.textContent = 'Confirmação';
+    cancel.style.display = '';
+    confirm.textContent = 'Confirmar';
+  } else {
+    card.classList.remove('denied');
+    status.textContent = 'Info';
+    cancel.style.display = 'none';
+    confirm.textContent = 'OK';
+  }
+  document.getElementById('modalBg').classList.add('open');
+}
+function modalConfirmAction() { if (modalAction) modalAction(); else closeModal(); }
+function closeModal() { document.getElementById('modalBg').classList.remove('open'); modalAction = null; }
+function closeModalIfBg(e) { if (e.target.id === 'modalBg') closeModal(); }
+
+function escapeHtml(s) { return String(s||'').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c])); }
+function escapeAttr(s) { return String(s||'').replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
+function formatDate(s) { if (!s) return '—'; const d = new Date(s); return d.toLocaleDateString('pt-BR'); }
+
+// AUTO-LOGIN
+(function init() {
+  const saved = sessionStorage.getItem('arena_vendedor');
+  if (saved) {
+    try {
+      currentUser = JSON.parse(saved);
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('app').classList.add('shown');
+      refreshAll().then(() => { setupRealtime(); setupAutoRefresh(); });
+    } catch (e) { sessionStorage.removeItem('arena_vendedor'); }
+  } else {
+    const rem = localStorage.getItem('arena_vendedor_remember');
+    if (rem) {
+      try {
+        const { cpf, pwd } = JSON.parse(rem);
+        document.getElementById('loginCpf').value = cpf || '';
+        document.getElementById('loginPwd').value = pwd || '';
+        document.getElementById('loginRemember').checked = true;
+      } catch (e) {}
+    }
+  }
+  document.getElementById('loginPwd').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+})();
+</script>
+</body>
+</html>
