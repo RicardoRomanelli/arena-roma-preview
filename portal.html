@@ -191,6 +191,51 @@
     display: grid; place-items: center;
   }
   .logout-link:hover { border-color: var(--blue); color: var(--white); }
+  .sync-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; color: var(--gray-5);
+    padding: 5px 10px; border-radius: 6px;
+    background: rgba(34,197,94,0.06); border: 1px solid rgba(34,197,94,0.2);
+  }
+  .sync-badge .live-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 0 0 rgba(34,197,94,0.5);
+    animation: syncpulse 1.6s ease-out infinite;
+  }
+  .sync-badge.stale { background: rgba(245,158,11,0.06); border-color: rgba(245,158,11,0.2); color: #fbbf24; }
+  .sync-badge.stale .live-dot { background: #fbbf24; }
+  @keyframes syncpulse {
+    0% { box-shadow: 0 0 0 0 currentColor; }
+    70% { box-shadow: 0 0 0 6px transparent; }
+    100% { box-shadow: 0 0 0 0 transparent; }
+  }
+  .hist-section {
+    padding: 0 40px 24px;
+    margin-top: 16px;
+  }
+  .hist-card {
+    background: linear-gradient(180deg, var(--gray-1), var(--black-2));
+    border: 1px solid var(--border); border-radius: 14px;
+    padding: 18px 20px;
+  }
+  .hist-list { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; }
+  .hist-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 12px; background: var(--gray-2); border-radius: 8px;
+    font-size: 13px; gap: 12px;
+  }
+  .hist-row .left { flex: 1; }
+  .hist-row .motivo { color: var(--white); font-weight: 600; }
+  .hist-row .when { color: var(--gray-5); font-size: 11px; margin-top: 2px; }
+  .hist-row .delta {
+    font-family: 'Anton', sans-serif; font-size: 18px; letter-spacing: 0.5px;
+  }
+  .hist-row .delta.pos { color: #6ee7b7; }
+  .hist-row .delta.neg { color: #fca5a5; }
+  @media (max-width: 720px) {
+    .hist-section { padding: 0 16px 24px; }
+  }
 
   .top-row {
     padding: 18px 40px 0;
@@ -534,7 +579,8 @@
         <span class="word2">ROMA</span>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:10px;">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <div class="sync-badge" id="syncBadge"><span class="live-dot"></span><span id="syncText">Atualizando...</span></div>
       <div class="user-chip">
         <div class="avatar" id="userAvatar"></div>
         <div class="user-info">
@@ -597,6 +643,16 @@
   </div>
   <section class="prizes" id="prizesGrid"></section>
 
+  <div class="section-title">
+    <h3>Sua atividade</h3>
+    <div class="info">Últimos 20 lançamentos · seu histórico de pontos</div>
+  </div>
+  <div class="hist-section">
+    <div class="hist-card">
+      <div class="hist-list" id="histList"></div>
+    </div>
+  </div>
+
   <footer>Arena Roma · Grupo Romanelli</footer>
 </div>
 
@@ -621,9 +677,12 @@ const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 let currentUser = null;
-let cache = { vendedores: [], campanhas: [], premios: [] };
+let cache = { vendedores: [], campanhas: [], premios: [], historico: [] };
 let featuredCamp = null;
 let modalAction = null;
+let lastUpdateAt = null;
+let realtimeChannel = null;
+let badgeTimer = null;
 
 function nivel(pts) {
   if (pts >= 200) return 'Diamante';
@@ -666,6 +725,8 @@ async function doLogin() {
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('app').classList.add('shown');
     await refreshAll();
+    setupRealtime();
+    setupAutoRefresh();
   } catch (e) {
     errEl.textContent = e.message || 'Erro ao fazer login.';
     errEl.classList.add('show');
@@ -683,25 +744,60 @@ function doLogout() {
   document.getElementById('loginCpf').value = '';
   document.getElementById('loginPwd').value = '';
   document.getElementById('loginError').classList.remove('show');
+  if (realtimeChannel) { sb.removeChannel(realtimeChannel); realtimeChannel = null; }
+  if (badgeTimer) { clearInterval(badgeTimer); badgeTimer = null; }
 }
 
 async function refreshAll() {
   try {
-    const [v, c, p] = await Promise.all([
+    const [v, c, p, h] = await Promise.all([
       sb.from('vendedores').select('id, pontos, status').eq('status', 'ativo'),
       sb.from('campanhas').select('*').eq('status', 'live').order('created_at', { ascending: false }),
-      sb.from('premios').select('*').eq('ativo', true).order('custo_pts')
+      sb.from('premios').select('*').eq('ativo', true).order('custo_pts'),
+      sb.from('historico_pontos').select('*').eq('vendedor_id', currentUser.id).order('created_at', { ascending: false }).limit(20)
     ]);
     cache.vendedores = v.data || [];
     cache.campanhas = c.data || [];
     cache.premios = p.data || [];
-    // atualizar pontos do current user
+    cache.historico = h.data || [];
     const me = cache.vendedores.find(x => x.id === currentUser.id);
     if (me) currentUser.pontos = me.pontos;
+    lastUpdateAt = Date.now();
+    updateSyncBadge();
     render();
   } catch (e) {
     toast('Erro: ' + e.message, true);
   }
+}
+
+function updateSyncBadge() {
+  const badge = document.getElementById('syncBadge');
+  const text = document.getElementById('syncText');
+  if (!badge || !text || !lastUpdateAt) return;
+  const secs = Math.floor((Date.now() - lastUpdateAt) / 1000);
+  let label;
+  if (secs < 5) label = 'Atualizado agora';
+  else if (secs < 60) label = `Atualizado há ${secs}s`;
+  else if (secs < 3600) label = `Atualizado há ${Math.floor(secs/60)}min`;
+  else label = `Atualizado há ${Math.floor(secs/3600)}h`;
+  text.textContent = label;
+  badge.classList.toggle('stale', secs > 120);
+}
+
+function setupRealtime() {
+  if (realtimeChannel) sb.removeChannel(realtimeChannel);
+  realtimeChannel = sb.channel('arena-portal-' + currentUser.id)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'vendedores' }, () => refreshAll())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'campanhas' }, () => refreshAll())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'premios' }, () => refreshAll())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'historico_pontos', filter: `vendedor_id=eq.${currentUser.id}` }, () => refreshAll())
+    .subscribe();
+}
+
+function setupAutoRefresh() {
+  setInterval(() => refreshAll(), 60000);
+  if (badgeTimer) clearInterval(badgeTimer);
+  badgeTimer = setInterval(updateSyncBadge, 5000);
 }
 
 function render() {
@@ -789,6 +885,22 @@ function render() {
       </div>
     `;
   }).join('') || '<p style="color:var(--gray-5);grid-column:1/-1;padding:20px;text-align:center;">Sem prêmios disponíveis.</p>';
+
+  // Histórico de pontos
+  const hist = document.getElementById('histList');
+  if (cache.historico.length === 0) {
+    hist.innerHTML = '<div style="text-align:center;color:var(--gray-5);padding:20px;font-size:13px;">Você ainda não tem atividade registrada. Quando ganhar/resgatar pontos, aparece aqui.</div>';
+  } else {
+    hist.innerHTML = cache.historico.map(h => `
+      <div class="hist-row">
+        <div class="left">
+          <div class="motivo">${escapeHtml(h.motivo)}</div>
+          <div class="when">${new Date(h.created_at).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })}</div>
+        </div>
+        <div class="delta ${h.delta >= 0 ? 'pos' : 'neg'}">${h.delta >= 0 ? '+' : ''}${h.delta}</div>
+      </div>
+    `).join('');
+  }
 }
 
 function canAccess(c) {
@@ -801,121 +913,4 @@ function canAccess(c) {
 }
 
 function bgFor(c) {
-  if (c.regra_acesso === 'FLA') return 'bg-fla';
-  if (c.regra_acesso === 'FLU') return 'bg-flu';
-  if (c.regra_acesso === '55RJ') return 'bg-55rj';
-  if (c.tipo === 'geral-premium') return 'bg-premium';
-  return 'bg-all';
-}
-function watermarkFor(c) {
-  if (c.regra_acesso === 'FLA') return 'FLA';
-  if (c.regra_acesso === 'FLU') return 'FLU';
-  if (c.regra_acesso === '55RJ') return '55';
-  if (c.regra_acesso === '+100 pts') return '100+';
-  if (c.regra_acesso === '+200 pts') return '200+';
-  return '★';
-}
-function tagFor(c) {
-  if (c.regra_acesso === 'FLA') return 'EXCLUSIVO FLA';
-  if (c.regra_acesso === 'FLU') return 'EXCLUSIVO FLU';
-  if (c.regra_acesso === '55RJ') return 'EXCLUSIVO 55RJ';
-  if (c.regra_acesso === '+100 pts') return '+100 PTS · GERAL';
-  if (c.regra_acesso === '+200 pts') return '+200 PTS · GERAL';
-  return 'AO VIVO';
-}
-
-function clickCamp(id) {
-  if (!id) return;
-  const c = cache.campanhas.find(x => x.id === id);
-  if (!c) return;
-  const can = canAccess(c);
-  if (can) {
-    openModal(c.titulo, 'Os pontos só contam vendas com cupom finalizado e sem devolução em 7 dias.', 'success', null);
-  } else {
-    const reason = (() => {
-      if (c.regra_acesso === '+100 pts') return `Você tem ${currentUser.pontos} pontos. Faltam ${100 - currentUser.pontos} pra entrar.`;
-      if (c.regra_acesso === '+200 pts') return `Você tem ${currentUser.pontos} pontos. Faltam ${200 - currentUser.pontos} pra entrar.`;
-      if (c.regra_acesso === 'FLA') return 'Esta corrida é exclusiva das lojas FLA.';
-      if (c.regra_acesso === 'FLU') return 'Esta corrida é exclusiva das lojas FLU.';
-      if (c.regra_acesso === '55RJ') return 'Esta corrida é exclusiva das lojas 55RJ.';
-      return 'Você não tem acesso a essa corrida no momento.';
-    })();
-    openModal(c.titulo, reason, 'denied', null);
-  }
-}
-
-async function pedirResgate(premioId, premioNome, custo) {
-  openModal(`Resgatar: ${premioNome}`, `Você vai trocar ${custo} pontos por ${premioNome}. Confirma?`, 'success', async () => {
-    try {
-      const { error } = await sb.rpc('pedir_resgate', { _vendedor_cpf: currentUser.cpf, _premio_id: premioId });
-      if (error) throw error;
-      toast('Pedido enviado! Aguarde aprovação da Mariana ou Dara.');
-      closeModal();
-      await refreshAll();
-    } catch (e) {
-      closeModal();
-      toast(e.message, true);
-    }
-  });
-}
-
-function mostrarBloqueado(nome, custo, estoque) {
-  let reason;
-  if (estoque !== null && estoque !== undefined && estoque <= 0) {
-    reason = `${nome} está sem estoque no momento.`;
-  } else {
-    reason = `Você tem ${currentUser.pontos} pontos. Precisa de ${custo}. Faltam ${custo - currentUser.pontos}.`;
-  }
-  openModal(nome, reason, 'denied', null);
-}
-
-function openModal(title, text, type, action) {
-  document.getElementById('modalTitle').textContent = title;
-  document.getElementById('modalText').textContent = text;
-  const card = document.getElementById('modalCard');
-  const status = document.getElementById('modalStatus');
-  const cancel = document.getElementById('modalCancel');
-  const confirm = document.getElementById('modalConfirm');
-  modalAction = action;
-  if (type === 'denied') {
-    card.classList.add('denied');
-    status.textContent = 'Não disponível';
-    cancel.style.display = 'none';
-    confirm.textContent = 'Entendi';
-  } else if (action) {
-    card.classList.remove('denied');
-    status.textContent = 'Confirmação';
-    cancel.style.display = '';
-    confirm.textContent = 'Confirmar';
-  } else {
-    card.classList.remove('denied');
-    status.textContent = 'Info';
-    cancel.style.display = 'none';
-    confirm.textContent = 'OK';
-  }
-  document.getElementById('modalBg').classList.add('open');
-}
-function modalConfirmAction() { if (modalAction) modalAction(); else closeModal(); }
-function closeModal() { document.getElementById('modalBg').classList.remove('open'); modalAction = null; }
-function closeModalIfBg(e) { if (e.target.id === 'modalBg') closeModal(); }
-
-function escapeHtml(s) { return String(s||'').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c])); }
-function escapeAttr(s) { return String(s||'').replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
-function formatDate(s) { if (!s) return '—'; const d = new Date(s); return d.toLocaleDateString('pt-BR'); }
-
-// AUTO-LOGIN
-(function init() {
-  const saved = sessionStorage.getItem('arena_vendedor');
-  if (saved) {
-    try {
-      currentUser = JSON.parse(saved);
-      document.getElementById('loginScreen').style.display = 'none';
-      document.getElementById('app').classList.add('shown');
-      refreshAll();
-    } catch (e) { sessionStorage.removeItem('arena_vendedor'); }
-  }
-  document.getElementById('loginPwd').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-})();
-</script>
-</body>
-</html>
+  if (c.regra_acesso === 'FLA') return 'bg-f

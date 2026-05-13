@@ -189,7 +189,26 @@
   .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
   .topbar h1 { font-family: 'Anton', sans-serif; font-size: 30px; letter-spacing: 2.5px; text-transform: uppercase; }
   .topbar .topbar-sub { font-size: 12px; color: var(--gray-5); margin-top: 2px; }
-  .topbar-actions { display: flex; gap: 10px; }
+  .topbar-actions { display: flex; gap: 10px; align-items: center; }
+  .sync-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; color: var(--gray-5);
+    padding: 5px 10px; border-radius: 6px;
+    background: rgba(34,197,94,0.06); border: 1px solid rgba(34,197,94,0.2);
+  }
+  .sync-badge .live-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 0 0 rgba(34,197,94,0.5);
+    animation: pulse 1.6s ease-out infinite;
+  }
+  .sync-badge.stale { background: rgba(245,158,11,0.06); border-color: rgba(245,158,11,0.2); color: var(--orange); }
+  .sync-badge.stale .live-dot { background: var(--orange); box-shadow: 0 0 0 0 rgba(245,158,11,0.5); }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 currentColor; }
+    70% { box-shadow: 0 0 0 6px transparent; }
+    100% { box-shadow: 0 0 0 0 transparent; }
+  }
   .btn {
     background: var(--gray-2); color: var(--white); border: 1px solid var(--border);
     padding: 8px 14px; border-radius: 8px; font-family: inherit;
@@ -514,7 +533,7 @@
   <main class="main">
     <!-- DASHBOARD -->
     <div class="view shown" id="view-dashboard">
-      <div class="topbar"><div><h1>Dashboard</h1><div class="topbar-sub">Visão geral do programa</div></div></div>
+      <div class="topbar"><div><h1>Dashboard</h1><div class="topbar-sub">Visão geral do programa</div></div><div class="topbar-actions"><div class="sync-badge" id="syncBadge"><span class="live-dot"></span><span id="syncText">Atualizando...</span></div></div></div>
       <div class="grid-4">
         <div class="card"><div class="kpi-label">Vendedores ativos</div><div class="kpi-value" id="dashTotalVend">—</div><div class="kpi-sub">cadastrados no programa</div></div>
         <div class="card"><div class="kpi-label">Pontos em circulação</div><div class="kpi-value" id="dashTotalPts">—</div><div class="kpi-sub">soma de todos os saldos</div></div>
@@ -632,6 +651,9 @@ let currentView = 'dashboard';
 let drawerVendId = null;
 let cache = { vendedores: [], admins: [], campanhas: [], premios: [], resgates: [], historico: {} };
 let parsedReport = { rows: [], headers: [], file: null };
+let lastUpdateAt = null;
+let realtimeChannel = null;
+let badgeTimer = null;
 
 const LOJA_MAP = {
   'FLU PLAZA':{grupo:'FLU',sup:'Juliana'}, 'FLU ICARAI':{grupo:'FLU',sup:'Juliana'},
@@ -690,6 +712,8 @@ async function doLogin() {
     document.getElementById('navRole').textContent = currentAdmin.role;
     document.getElementById('navAvatar').textContent = currentAdmin.nome.slice(0,2).toUpperCase();
     await refreshAll();
+    setupRealtime();
+    setupAutoRefresh();
   } catch (e) {
     errEl.textContent = e.message || 'Erro ao fazer login.';
     errEl.classList.add('show');
@@ -707,6 +731,8 @@ function doLogout() {
   document.getElementById('loginCpf').value = '';
   document.getElementById('loginPwd').value = '';
   document.getElementById('loginError').classList.remove('show');
+  if (realtimeChannel) { sb.removeChannel(realtimeChannel); realtimeChannel = null; }
+  if (badgeTimer) { clearInterval(badgeTimer); badgeTimer = null; }
 }
 
 // ====== NAV ======
@@ -733,10 +759,44 @@ async function refreshAll() {
     cache.campanhas = c.data || [];
     cache.premios = p.data || [];
     cache.resgates = r.data || [];
+    lastUpdateAt = Date.now();
+    updateSyncBadge();
     renderAll();
   } catch (e) {
     toast('Erro ao carregar dados: ' + e.message, true);
   }
+}
+
+function updateSyncBadge() {
+  const badge = document.getElementById('syncBadge');
+  const text = document.getElementById('syncText');
+  if (!badge || !text || !lastUpdateAt) return;
+  const secs = Math.floor((Date.now() - lastUpdateAt) / 1000);
+  let label;
+  if (secs < 5) label = 'Atualizado agora';
+  else if (secs < 60) label = `Atualizado há ${secs}s`;
+  else if (secs < 3600) label = `Atualizado há ${Math.floor(secs/60)}min`;
+  else label = `Atualizado há ${Math.floor(secs/3600)}h`;
+  text.textContent = label;
+  badge.classList.toggle('stale', secs > 120);
+}
+
+function setupRealtime() {
+  if (realtimeChannel) sb.removeChannel(realtimeChannel);
+  realtimeChannel = sb.channel('arena-admin')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'vendedores' }, () => refreshAll())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'campanhas' }, () => refreshAll())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'premios' }, () => refreshAll())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'resgates' }, () => refreshAll())
+    .subscribe();
+}
+
+function setupAutoRefresh() {
+  // Backup do realtime: refresh a cada 60s
+  setInterval(() => refreshAll(), 60000);
+  // Atualizar badge a cada 5s
+  if (badgeTimer) clearInterval(badgeTimer);
+  badgeTimer = setInterval(updateSyncBadge, 5000);
 }
 
 function renderAll() {
@@ -1328,70 +1388,4 @@ function openUserForm() {
       </div>
       <div class="field"><label>Senha (deixe vazio pra gerar)</label><input id="uf_pwd" placeholder="vazio = aleatória"></div>
     </div>
-    <div class="modal-actions">
-      <button class="btn" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveUser()">Cadastrar</button>
-    </div>
-  `);
-}
-
-async function saveUser() {
-  const nome = document.getElementById('uf_nome').value.trim();
-  const cpf = document.getElementById('uf_cpf').value.trim();
-  const role = document.getElementById('uf_role').value;
-  let pwd = document.getElementById('uf_pwd').value.trim();
-  if (!nome || !cpf) { toast('Preencha nome e CPF.', true); return; }
-  if (!pwd) pwd = gerarSenha(10);
-  try {
-    const { error } = await sb.rpc('criar_admin', { _nome: nome, _cpf: cpf, _senha: pwd, _role: role, _admin_cpf: currentAdmin.cpf });
-    if (error) throw error;
-    closeModal();
-    await refreshAll();
-    prompt(`✅ ${nome} cadastrado!\n\nSenha:`, pwd);
-  } catch (e) { toast(e.message, true); }
-}
-
-async function resetSenhaAdmin(cpf, nome) {
-  if (!confirm(`Resetar senha de ${nome}?`)) return;
-  const nova = gerarSenha(10);
-  try {
-    const { error } = await sb.rpc('resetar_senha_admin', { _target_cpf: cpf, _nova_senha: nova, _admin_cpf: currentAdmin.cpf });
-    if (error) throw error;
-    prompt(`Nova senha de ${nome}:`, nova);
-  } catch (e) { toast(e.message, true); }
-}
-
-// ====== MODAL ======
-function showModal(html) {
-  document.getElementById('modalCard').innerHTML = html;
-  document.getElementById('modalBg').classList.add('open');
-}
-function closeModal(e) {
-  if (e && e.target.id !== 'modalBg') return;
-  document.getElementById('modalBg').classList.remove('open');
-}
-
-// ====== HELPERS ======
-function escapeHtml(s) { return String(s||'').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c])); }
-function escapeAttr(s) { return String(s||'').replace(/"/g, '&quot;'); }
-function formatDate(s) { if (!s) return '—'; const d = new Date(s); return d.toLocaleDateString('pt-BR'); }
-
-// ====== AUTO-LOGIN se houver sessão salva ======
-(function init() {
-  const saved = sessionStorage.getItem('arena_admin');
-  if (saved) {
-    try {
-      currentAdmin = JSON.parse(saved);
-      document.getElementById('loginScreen').style.display = 'none';
-      document.getElementById('app').classList.add('shown');
-      document.getElementById('navName').textContent = currentAdmin.nome;
-      document.getElementById('navRole').textContent = currentAdmin.role;
-      document.getElementById('navAvatar').textContent = currentAdmin.nome.slice(0,2).toUpperCase();
-      refreshAll();
-    } catch (e) { sessionStorage.removeItem('arena_admin'); }
-  }
-  document.getElementById('loginPwd').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-})();
-</script>
-</body>
-</html>
+    <div class="modal-actions
