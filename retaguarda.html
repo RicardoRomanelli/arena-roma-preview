@@ -559,7 +559,7 @@
 
     <!-- VENDEDORES -->
     <div class="view" id="view-vendedores">
-      <div class="topbar"><div><h1>Vendedores</h1><div class="topbar-sub" id="vendSubtitle">Carregando...</div></div><div class="topbar-actions"><button class="btn" onclick="openPdvSyncModal()">🔄 Puxar do PDV</button><button class="btn" onclick="openUploadModal()">📥 Importar CSV</button><button class="btn btn-primary" onclick="openVendForm()">+ Novo</button></div></div>
+      <div class="topbar"><div><h1>Vendedores</h1><div class="topbar-sub" id="vendSubtitle">Carregando...</div></div><div class="topbar-actions"><span id="pdvStatusBadge" class="sync-badge" style="display:none;"><span class="live-dot"></span><span id="pdvStatusText">PDV: —</span></span><button class="btn" onclick="openPdvSyncModal()">🔄 Puxar do PDV</button><button class="btn" onclick="openUploadModal()">📥 Importar CSV</button><button class="btn btn-primary" onclick="openVendForm()">+ Novo</button></div></div>
       <div class="filter-bar">
         <input type="text" id="vendSearch" placeholder="Buscar nome ou loja..." oninput="renderVend()">
         <select id="vendFiltroGrupo" onchange="renderVend()"><option value="">Todos os grupos</option><option value="FLA">FLA</option><option value="FLU">FLU</option><option value="55RJ">55RJ</option></select>
@@ -655,7 +655,7 @@ let pdvMatched = []; // vendedores com match no Arena Roma
 let currentAdmin = null;
 let currentView = 'dashboard';
 let drawerVendId = null;
-let cache = { vendedores: [], admins: [], campanhas: [], premios: [], resgates: [], historico: {} };
+let cache = { vendedores: [], admins: [], campanhas: [], premios: [], resgates: [], historico: {}, status: {} };
 let parsedReport = { rows: [], headers: [], file: null };
 let lastUpdateAt = null;
 let realtimeChannel = null;
@@ -753,23 +753,49 @@ function navTo(view) {
 // ====== DATA FETCH ======
 async function refreshAll() {
   try {
-    const [v, a, c, p, r] = await Promise.all([
+    const [v, a, c, p, r, s] = await Promise.all([
       sb.from('vendedores').select('*').order('pontos', { ascending: false }),
       sb.from('admins_pub').select('*'),
       sb.from('campanhas').select('*').order('created_at', { ascending: false }),
       sb.from('premios').select('*').order('custo_pts'),
-      sb.from('resgates').select('*, vendedores(nome), premios(titulo, icone)').order('created_at', { ascending: false }).limit(50)
+      sb.from('resgates').select('*, vendedores(nome), premios(titulo, icone)').order('created_at', { ascending: false }).limit(50),
+      sb.from('arena_status').select('*')
     ]);
     cache.vendedores = v.data || [];
     cache.admins = a.data || [];
     cache.campanhas = c.data || [];
     cache.premios = p.data || [];
     cache.resgates = r.data || [];
+    cache.status = (s.data || []).reduce((acc, x) => { acc[x.chave] = x; return acc; }, {});
     lastUpdateAt = Date.now();
     updateSyncBadge();
+    updatePdvStatusBadge();
     renderAll();
   } catch (e) {
     toast('Erro ao carregar dados: ' + e.message, true);
+  }
+}
+
+function updatePdvStatusBadge() {
+  const badge = document.getElementById('pdvStatusBadge');
+  const text = document.getElementById('pdvStatusText');
+  if (!badge || !text) return;
+  const st = cache.status?.['pdv_status'];
+  if (!st) { badge.style.display = 'none'; return; }
+  badge.style.display = '';
+  const v = st.valor;
+  if (v === 'up') {
+    text.textContent = 'PDV: online';
+    badge.classList.remove('stale');
+  } else if (v === 'maintenance') {
+    text.textContent = 'PDV: manutenção';
+    badge.classList.add('stale');
+  } else if (v === 'connection_refused') {
+    text.textContent = 'PDV: offline (auto-retry 3min)';
+    badge.classList.add('stale');
+  } else {
+    text.textContent = 'PDV: ' + v;
+    badge.classList.add('stale');
   }
 }
 
@@ -794,6 +820,7 @@ function setupRealtime() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'campanhas' }, () => refreshAll())
     .on('postgres_changes', { event: '*', schema: 'public', table: 'premios' }, () => refreshAll())
     .on('postgres_changes', { event: '*', schema: 'public', table: 'resgates' }, () => refreshAll())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'arena_status' }, () => refreshAll())
     .subscribe();
 }
 
@@ -1355,36 +1382,4 @@ async function deletePrize(id) {
   } catch (e) { toast(e.message, true); }
 }
 
-async function approveResgate(id) {
-  try {
-    const { error } = await sb.rpc('aprovar_resgate', { _resgate_id: id, _admin_cpf: currentAdmin.cpf });
-    if (error) throw error;
-    toast('Resgate aprovado.');
-    await refreshAll();
-  } catch (e) { toast(e.message, true); }
-}
-
-async function rejectResgate(id) {
-  const motivo = prompt('Motivo da recusa (opcional):') || '';
-  try {
-    const { error } = await sb.rpc('recusar_resgate', { _resgate_id: id, _admin_cpf: currentAdmin.cpf, _motivo: motivo });
-    if (error) throw error;
-    toast('Resgate recusado.');
-    await refreshAll();
-  } catch (e) { toast(e.message, true); }
-}
-
-// ====== USUÁRIOS / ADMINS ======
-function openUserForm() {
-  showModal(`
-    <h3>Novo admin</h3>
-    <div class="modal-sub">Cadastrar quem mais pode acessar a retaguarda</div>
-    <div class="form-row two-col">
-      <div class="field"><label>Nome</label><input id="uf_nome"></div>
-      <div class="field"><label>CPF</label><input id="uf_cpf" placeholder="000.000.000-00"></div>
-    </div>
-    <div class="form-row two-col">
-      <div class="field"><label>Perfil</label>
-        <select id="uf_role">
-          <option value="admin">Admin</option>
-          <op
+async function ap
