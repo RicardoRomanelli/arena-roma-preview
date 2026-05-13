@@ -559,7 +559,7 @@
 
     <!-- VENDEDORES -->
     <div class="view" id="view-vendedores">
-      <div class="topbar"><div><h1>Vendedores</h1><div class="topbar-sub" id="vendSubtitle">Carregando...</div></div><div class="topbar-actions"><button class="btn" onclick="openUploadModal()">📥 Importar relatório</button><button class="btn btn-primary" onclick="openVendForm()">+ Novo</button></div></div>
+      <div class="topbar"><div><h1>Vendedores</h1><div class="topbar-sub" id="vendSubtitle">Carregando...</div></div><div class="topbar-actions"><button class="btn" onclick="openPdvSyncModal()">🔄 Puxar do PDV</button><button class="btn" onclick="openUploadModal()">📥 Importar CSV</button><button class="btn btn-primary" onclick="openVendForm()">+ Novo</button></div></div>
       <div class="filter-bar">
         <input type="text" id="vendSearch" placeholder="Buscar nome ou loja..." oninput="renderVend()">
         <select id="vendFiltroGrupo" onchange="renderVend()"><option value="">Todos os grupos</option><option value="FLA">FLA</option><option value="FLU">FLU</option><option value="55RJ">55RJ</option></select>
@@ -643,7 +643,13 @@
 // ====== CONFIG ======
 const SUPABASE_URL = 'https://bmnindhstgwncpqskfma.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJtbmluZGhzdGd3bmNwcXNrZm1hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MjM4MDQsImV4cCI6MjA5NDE5OTgwNH0.aPQw8ZtstrtwEhuDXKv3lx6B29dQycvNDgJ9NztkUe0';
+const ARENA_PDV_URL = 'http://134.209.78.210:8888';
+const ARENA_PDV_TOKEN = 'A6Swd8Ngg6BSJ4NHcsQbG5WEw3Hw2oK8j7ktfLI8';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// ====== PDV SYNC STATE ======
+let pdvPreview = []; // resultado bruto do PDV
+let pdvMatched = []; // vendedores com match no Arena Roma
 
 // ====== STATE ======
 let currentAdmin = null;
@@ -1381,11 +1387,4 @@ function openUserForm() {
       <div class="field"><label>Perfil</label>
         <select id="uf_role">
           <option value="admin">Admin</option>
-          <option value="rh">RH</option>
-          <option value="marketing">Marketing</option>
-          <option value="dono">Dono</option>
-        </select>
-      </div>
-      <div class="field"><label>Senha (deixe vazio pra gerar)</label><input id="uf_pwd" placeholder="vazio = aleatória"></div>
-    </div>
-    <div class="modal-actions
+          <op
